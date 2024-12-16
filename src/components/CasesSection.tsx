@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Star, Sparkles } from "lucide-react";
+import { Star, Sparkles, CircuitBoard, Database, Cpu, Bot } from "lucide-react";
 
 const cases = [
   {
@@ -20,6 +20,51 @@ export const CasesSection = () => {
   return (
     <section className="py-20 px-4 bg-background relative">
       <div className="absolute inset-0 bg-tech-pattern opacity-50"></div>
+
+      {/* Animated tech elements */}
+      <motion.div 
+        animate={{ 
+          rotate: 360,
+          scale: [1, 1.1, 1]
+        }}
+        transition={{ 
+          rotate: { duration: 25, repeat: Infinity, ease: "linear" },
+          scale: { duration: 4, repeat: Infinity, ease: "easeInOut" }
+        }}
+        className="absolute top-20 left-10 text-primary/10"
+      >
+        <CircuitBoard size={100} />
+      </motion.div>
+      
+      <motion.div 
+        animate={{ 
+          rotate: -360,
+          y: [-20, 20, -20]
+        }}
+        transition={{ 
+          rotate: { duration: 30, repeat: Infinity, ease: "linear" },
+          y: { duration: 5, repeat: Infinity, ease: "easeInOut" }
+        }}
+        className="absolute bottom-20 right-10 text-accent/10"
+      >
+        <Database size={120} />
+      </motion.div>
+
+      <motion.div 
+        animate={{ 
+          scale: [1, 1.2, 1],
+          opacity: [0.1, 0.2, 0.1]
+        }}
+        transition={{ 
+          duration: 4,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+        className="absolute top-1/3 right-1/4 text-primary/10"
+      >
+        <Bot size={80} />
+      </motion.div>
+      
       <div className="container max-w-6xl relative">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -45,15 +90,37 @@ export const CasesSection = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.2 }}
-              className="p-6 rounded-xl bg-muted backdrop-blur-lg border border-primary/10 hover:border-primary/30 transition-all duration-300 shadow-lg"
+              whileHover={{ scale: 1.05 }}
+              className="p-6 rounded-xl bg-muted backdrop-blur-lg border border-primary/10 hover:border-primary/30 transition-all duration-300 shadow-lg group relative overflow-hidden"
             >
-              <div className="flex items-center gap-1 mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 fill-accent text-accent" />
-                ))}
+              {/* Animated background gradient */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              
+              <div className="relative z-10">
+                <div className="flex items-center gap-1 mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-5 h-5 fill-accent text-accent" />
+                  ))}
+                </div>
+                <h3 className="text-xl font-semibold mb-3 text-foreground">{case_.company}</h3>
+                <p className="text-gray-300">{case_.result}</p>
               </div>
-              <h3 className="text-xl font-semibold mb-3 text-foreground">{case_.company}</h3>
-              <p className="text-gray-300">{case_.result}</p>
+
+              {/* Tech decoration */}
+              <motion.div
+                animate={{ 
+                  rotate: 360,
+                  scale: [1, 1.1, 1]
+                }}
+                transition={{ 
+                  duration: 8,
+                  repeat: Infinity,
+                  ease: "linear"
+                }}
+                className="absolute -bottom-6 -right-6 text-primary/5"
+              >
+                <Cpu size={80} />
+              </motion.div>
             </motion.div>
           ))}
         </div>
