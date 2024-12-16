@@ -1,20 +1,24 @@
 import { motion } from "framer-motion";
-import { CheckCircle2, Sparkles } from "lucide-react";
+import { CheckCircle2, Sparkles, Target, Code2, Rocket, Zap, Bot, Cpu } from "lucide-react";
 
 const steps = [
   {
+    icon: Target,
     title: "Reunião de Diagnóstico Personalizado",
     description: "Analisamos seu processo de vendas, público-alvo e desafios para criar uma solução sob medida para você."
   },
   {
+    icon: Bot,
     title: "Construção do Agente de IA Personalizado",
     description: "Desenvolvemos um agente de inteligência artificial específico para o seu negócio, com respostas alinhadas ao seu tom de voz e objetivos."
   },
   {
+    icon: Code2,
     title: "Implementação e Testes Monitorados",
     description: "Testamos a automação em um ambiente controlado, ajustando cada detalhe em colaboração com você."
   },
   {
+    icon: Rocket,
     title: "Lançamento e Validação em Tempo Real",
     description: "Após os testes, colocamos o sistema em operação e monitoramos os resultados para garantir conversões crescentes."
   }
@@ -22,8 +26,26 @@ const steps = [
 
 export const ProcessSection = () => {
   return (
-    <section className="py-20 px-4 bg-muted relative">
+    <section className="py-20 px-4 bg-muted relative overflow-hidden">
       <div className="absolute inset-0 bg-tech-pattern opacity-50"></div>
+      
+      {/* Animated tech elements */}
+      <motion.div 
+        animate={{ rotate: 360 }}
+        transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+        className="absolute top-20 right-10 text-primary/10"
+      >
+        <Cpu size={120} />
+      </motion.div>
+      
+      <motion.div 
+        animate={{ rotate: -360 }}
+        transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+        className="absolute bottom-20 left-10 text-accent/10"
+      >
+        <Zap size={100} />
+      </motion.div>
+      
       <div className="container max-w-6xl relative">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -50,11 +72,11 @@ export const ProcessSection = () => {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.2 }}
-              className="flex items-start gap-4 bg-background/50 backdrop-blur-lg p-6 rounded-xl border border-primary/10 hover:border-primary/30 transition-all shadow-lg"
+              className="flex items-start gap-4 bg-background/50 backdrop-blur-lg p-6 rounded-xl border border-primary/10 hover:border-primary/30 transition-all shadow-lg group"
             >
               <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                  <CheckCircle2 className="w-5 h-5 text-primary" />
+                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <step.icon className="w-6 h-6 text-primary" />
                 </div>
               </div>
               <div>

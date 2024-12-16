@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Brain, Sparkles } from "lucide-react";
+import { ArrowRight, Brain, Sparkles, Bot, Cpu, MessageSquare, Zap } from "lucide-react";
 
 export const HeroSection = () => {
   return (
@@ -9,6 +9,31 @@ export const HeroSection = () => {
         <div className="absolute top-20 left-10 w-32 h-32 bg-primary rounded-full filter blur-3xl animate-pulse"></div>
         <div className="absolute bottom-20 right-10 w-32 h-32 bg-accent rounded-full filter blur-3xl animate-pulse"></div>
       </div>
+      
+      {/* Floating tech elements */}
+      <motion.div 
+        animate={{ y: [-10, 10] }}
+        transition={{ repeat: Infinity, repeatType: "reverse", duration: 2 }}
+        className="absolute top-1/4 left-10 text-primary/30"
+      >
+        <Bot size={40} />
+      </motion.div>
+      
+      <motion.div 
+        animate={{ y: [-15, 15] }}
+        transition={{ repeat: Infinity, repeatType: "reverse", duration: 2.5 }}
+        className="absolute top-1/3 right-10 text-accent/30"
+      >
+        <Cpu size={40} />
+      </motion.div>
+      
+      <motion.div 
+        animate={{ y: [-12, 12] }}
+        transition={{ repeat: Infinity, repeatType: "reverse", duration: 3 }}
+        className="absolute bottom-1/4 left-20 text-primary/30"
+      >
+        <MessageSquare size={40} />
+      </motion.div>
       
       <div className="container max-w-6xl relative">
         <motion.div
@@ -28,10 +53,19 @@ export const HeroSection = () => {
             <Sparkles className="w-4 h-4" />
           </motion.span>
           
-          <h1 className="text-4xl md:text-6xl font-bold text-foreground leading-tight">
-            Transforme Conversas em
-            <span className="text-primary animate-glow"> Vendas</span>
-          </h1>
+          <div className="relative">
+            <h1 className="text-4xl md:text-6xl font-bold text-foreground leading-tight">
+              Transforme Conversas em
+              <span className="text-primary animate-glow ml-2">Vendas</span>
+            </h1>
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              className="absolute -top-8 -right-8 text-primary/20"
+            >
+              <Zap size={64} />
+            </motion.div>
+          </div>
           
           <p className="text-lg md:text-xl text-gray-300 max-w-3xl mx-auto">
             Aumente vendas, automatize atendimento e ofereça experiências personalizadas 
