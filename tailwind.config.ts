@@ -22,8 +22,8 @@ export default {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
+        background: "#1A1F2C",
+        foreground: "#ffffff",
         primary: {
           DEFAULT: "#9b87f5",
           hover: "#8b76f4",
@@ -40,8 +40,8 @@ export default {
           foreground: "#ffffff",
         },
         muted: {
-          DEFAULT: "#F1F0FB",
-          foreground: "#1A1F2C",
+          DEFAULT: "#221F26",
+          foreground: "#ffffff",
         },
       },
       keyframes: {
@@ -61,12 +61,20 @@ export default {
           from: { opacity: "0", transform: "translateY(20px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
+        glow: {
+          "0%, 100%": { boxShadow: "0 0 20px rgba(155, 135, 245, 0.3)" },
+          "50%": { boxShadow: "0 0 30px rgba(155, 135, 245, 0.6)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         float: "float 6s ease-in-out infinite",
         fadeIn: "fadeIn 0.6s ease-out forwards",
+        glow: "glow 3s ease-in-out infinite",
+      },
+      backgroundImage: {
+        'tech-pattern': 'linear-gradient(90deg, rgba(26,31,44,1) 0%, rgba(34,31,38,1) 100%)',
       },
     },
   },

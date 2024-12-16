@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Star } from "lucide-react";
+import { Star, Sparkles } from "lucide-react";
 
 const cases = [
   {
@@ -18,18 +18,21 @@ const cases = [
 
 export const CasesSection = () => {
   return (
-    <section className="py-20 px-4 bg-white">
-      <div className="container max-w-6xl">
+    <section className="py-20 px-4 bg-background relative">
+      <div className="absolute inset-0 bg-tech-pattern opacity-50"></div>
+      <div className="container max-w-6xl relative">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4 flex items-center justify-center gap-2">
+            <Sparkles className="w-6 h-6 text-primary" />
             Transformamos Conversas em Resultados Reais
+            <Sparkles className="w-6 h-6 text-primary" />
           </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-gray-300 max-w-2xl mx-auto">
             Descubra como ajudamos empresas a revolucionar suas vendas automatizadas.
           </p>
         </motion.div>
@@ -42,15 +45,15 @@ export const CasesSection = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.2 }}
-              className="p-6 rounded-xl bg-muted hover:shadow-lg transition-all duration-300"
+              className="p-6 rounded-xl bg-muted backdrop-blur-lg border border-primary/10 hover:border-primary/30 transition-all duration-300 shadow-lg"
             >
               <div className="flex items-center gap-1 mb-4">
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} className="w-5 h-5 fill-accent text-accent" />
                 ))}
               </div>
-              <h3 className="text-xl font-semibold mb-3">{case_.company}</h3>
-              <p className="text-muted-foreground">{case_.result}</p>
+              <h3 className="text-xl font-semibold mb-3 text-foreground">{case_.company}</h3>
+              <p className="text-gray-300">{case_.result}</p>
             </motion.div>
           ))}
         </div>

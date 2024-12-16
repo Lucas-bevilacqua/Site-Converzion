@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Sparkles } from "lucide-react";
 
 const steps = [
   {
@@ -22,18 +22,21 @@ const steps = [
 
 export const ProcessSection = () => {
   return (
-    <section className="py-20 px-4 bg-muted">
-      <div className="container max-w-6xl">
+    <section className="py-20 px-4 bg-muted relative">
+      <div className="absolute inset-0 bg-tech-pattern opacity-50"></div>
+      <div className="container max-w-6xl relative">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4 flex items-center justify-center gap-2">
+            <Sparkles className="w-6 h-6 text-primary" />
             Nosso Processo em 4 Etapas
+            <Sparkles className="w-6 h-6 text-primary" />
           </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-gray-300 max-w-2xl mx-auto">
             No Converzion, seguimos um processo estratégico que garante resultados reais, 
             sempre adaptado ao seu negócio.
           </p>
@@ -47,7 +50,7 @@ export const ProcessSection = () => {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.2 }}
-              className="flex items-start gap-4 bg-white p-6 rounded-xl shadow-sm"
+              className="flex items-start gap-4 bg-background/50 backdrop-blur-lg p-6 rounded-xl border border-primary/10 hover:border-primary/30 transition-all shadow-lg"
             >
               <div className="flex-shrink-0">
                 <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
@@ -55,8 +58,8 @@ export const ProcessSection = () => {
                 </div>
               </div>
               <div>
-                <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
-                <p className="text-muted-foreground">{step.description}</p>
+                <h3 className="text-xl font-semibold mb-2 text-foreground">{step.title}</h3>
+                <p className="text-gray-300">{step.description}</p>
               </div>
             </motion.div>
           ))}
