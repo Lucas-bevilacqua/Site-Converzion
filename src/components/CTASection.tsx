@@ -1,7 +1,11 @@
 import { motion } from "framer-motion";
 import { ArrowRight, Sparkles, CircuitBoard, Database, Bot } from "lucide-react";
+import { useState } from "react";
+import { LeadCaptureForm } from "./LeadCaptureForm";
 
 export const CTASection = () => {
+  const [isFormOpen, setIsFormOpen] = useState(false);
+
   return (
     <section className="py-20 px-4 bg-tech-pattern relative">
       <div className="absolute inset-0 bg-gradient-to-b from-background to-muted opacity-50"></div>
@@ -73,13 +77,18 @@ export const CTASection = () => {
             whileTap={{ scale: 0.95 }}
             className="inline-block"
           >
-            <button className="px-8 py-4 bg-accent hover:bg-accent-hover text-white rounded-lg font-medium flex items-center gap-2 mx-auto transition-all shadow-lg shadow-accent/20 backdrop-blur-sm">
+            <button 
+              onClick={() => setIsFormOpen(true)}
+              className="px-8 py-4 bg-accent hover:bg-accent-hover text-white rounded-lg font-medium flex items-center gap-2 mx-auto transition-all shadow-lg shadow-accent/20 backdrop-blur-sm"
+            >
               Agendar Reunião
               <ArrowRight className="w-4 h-4" />
             </button>
           </motion.div>
         </motion.div>
       </div>
+
+      <LeadCaptureForm open={isFormOpen} onOpenChange={setIsFormOpen} />
     </section>
   );
 };
