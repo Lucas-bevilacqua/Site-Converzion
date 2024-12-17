@@ -25,18 +25,18 @@ export default {
         background: "#1A1F2C",
         foreground: "#ffffff",
         primary: {
-          DEFAULT: "#9b87f5",
-          hover: "#8b76f4",
+          DEFAULT: "#403E43", // More sophisticated dark charcoal
+          hover: "#2D2B30",
           foreground: "#ffffff",
         },
         secondary: {
-          DEFAULT: "#7E69AB",
+          DEFAULT: "#7E69AB", // Muted purple for professionalism
           hover: "#6d5899",
           foreground: "#ffffff",
         },
         accent: {
-          DEFAULT: "#F97316",
-          hover: "#ea6c15",
+          DEFAULT: "#0EA5E9", // Professional blue
+          hover: "#0284C7",
           foreground: "#ffffff",
         },
         muted: {
@@ -74,7 +74,7 @@ export default {
         glow: "glow 3s ease-in-out infinite",
       },
       backgroundImage: {
-        'tech-pattern': 'linear-gradient(90deg, rgba(26,31,44,1) 0%, rgba(34,31,38,1) 100%)',
+        'tech-pattern': 'linear-gradient(90deg, rgba(26,31,44,0.95) 0%, rgba(34,31,38,0.95) 100%)',
       },
     },
   },
