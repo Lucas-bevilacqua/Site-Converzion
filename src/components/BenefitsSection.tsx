@@ -24,7 +24,17 @@ export const BenefitsSection = () => {
     <section className="py-20 px-4 bg-background relative overflow-hidden">
       <div className="absolute inset-0 bg-tech-pattern opacity-50"></div>
       
-      {/* Animated tech elements */}
+      {/* Background image */}
+      <div 
+        className="absolute inset-0 z-0 opacity-10"
+        style={{
+          backgroundImage: 'url(https://images.unsplash.com/photo-1497604401993-f2e922e5cb0a)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          filter: 'grayscale(50%)'
+        }}
+      ></div>
+      
       <motion.div 
         animate={{ 
           rotate: 360,
@@ -83,20 +93,35 @@ export const BenefitsSection = () => {
       </motion.div>
       
       <div className="container max-w-6xl relative">
-        <div className="text-center mb-16">
-          <motion.h2
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-16">
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-3xl md:text-4xl font-bold text-foreground mb-4 flex items-center justify-center gap-2"
+            className="text-center lg:text-left"
           >
-            <Sparkles className="w-6 h-6 text-primary" />
-            Por que Escolher o Converzion?
-            <Sparkles className="w-6 h-6 text-primary" />
-          </motion.h2>
-          <p className="text-gray-300 max-w-2xl mx-auto">
-            Descubra como nossa tecnologia pode revolucionar seu atendimento
-          </p>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4 flex items-center justify-center lg:justify-start gap-2">
+              <Sparkles className="w-6 h-6 text-primary" />
+              Por que Escolher o Converzion?
+              <Sparkles className="w-6 h-6 text-primary" />
+            </h2>
+            <p className="text-gray-300 max-w-2xl mx-auto lg:mx-0">
+              Descubra como nossa tecnologia pode revolucionar seu atendimento
+            </p>
+          </motion.div>
+          
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className="relative hidden lg:block"
+          >
+            <img 
+              src="https://images.unsplash.com/photo-1581092795360-fd1ca04f0952" 
+              alt="Professional business environment" 
+              className="rounded-xl shadow-lg"
+            />
+          </motion.div>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

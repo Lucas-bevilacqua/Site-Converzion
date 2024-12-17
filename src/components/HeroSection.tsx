@@ -6,7 +6,17 @@ export const HeroSection = () => {
     <section className="min-h-screen flex items-center justify-center bg-tech-pattern py-20 px-4 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-background via-background/90 to-muted"></div>
       
-      {/* Floating tech elements with business icons */}
+      {/* Background image */}
+      <div 
+        className="absolute inset-0 z-0 opacity-20"
+        style={{
+          backgroundImage: 'url(https://images.unsplash.com/photo-1486718448742-163732cd1544)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          filter: 'grayscale(50%)'
+        }}
+      ></div>
+      
       <motion.div 
         animate={{ 
           rotate: 360,
@@ -51,47 +61,48 @@ export const HeroSection = () => {
       </motion.div>
       
       <div className="container max-w-6xl relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center space-y-8"
-        >
-          <motion.span
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="inline-flex items-center gap-2 px-4 py-1.5 bg-accent/10 text-accent rounded-full text-sm font-medium mb-4 backdrop-blur-sm border border-accent/20"
-          >
-            <Brain className="w-4 h-4" />
-            Tecnologia de Ponta para Seu Negócio
-            <Sparkles className="w-4 h-4" />
-          </motion.span>
-          
-          <div className="relative">
-            <motion.h1 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="text-4xl md:text-6xl font-bold text-foreground leading-tight"
-            >
-              Automatize Suas Vendas.
-              <br />
-              <span className="text-accent">Maximize Seus Resultados.</span>
-            </motion.h1>
-          </div>
-          
-          <motion.p 
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="text-lg md:text-xl text-gray-300 max-w-3xl mx-auto"
+            transition={{ duration: 0.6 }}
+            className="text-left space-y-8"
           >
-            Transforme seu processo de vendas com nossa solução empresarial de IA. 
-            Aumente a eficiência, reduza custos e potencialize o crescimento do seu negócio 
-            com automação inteligente.
-          </motion.p>
-          
+            <motion.span
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="inline-flex items-center gap-2 px-4 py-1.5 bg-accent/10 text-accent rounded-full text-sm font-medium mb-4 backdrop-blur-sm border border-accent/20"
+            >
+              <Brain className="w-4 h-4" />
+              Tecnologia de Ponta para Seu Negócio
+              <Sparkles className="w-4 h-4" />
+            </motion.span>
+            
+            <div className="relative">
+              <motion.h1 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="text-4xl md:text-6xl font-bold text-foreground leading-tight"
+              >
+                Automatize Suas Vendas.
+                <br />
+                <span className="text-accent">Maximize Seus Resultados.</span>
+              </motion.h1>
+            </div>
+            
+            <motion.p 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="text-lg md:text-xl text-gray-300 max-w-3xl"
+            >
+              Transforme seu processo de vendas com nossa solução empresarial de IA. 
+              Aumente a eficiência, reduza custos e potencialize o crescimento do seu negócio 
+              com automação inteligente.
+            </motion.p>
+            
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -159,7 +170,24 @@ export const HeroSection = () => {
               <p className="text-gray-300">Atendimento automatizado</p>
             </motion.div>
           </div>
-        </motion.div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.5 }}
+            className="relative hidden lg:block"
+          >
+            <div className="relative rounded-xl overflow-hidden shadow-2xl">
+              <img 
+                src="https://images.unsplash.com/photo-1483058712412-4245e9b90334" 
+                alt="Modern workspace with technology" 
+                className="w-full h-auto rounded-xl"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent"></div>
+            </div>
+          </motion.div>
+        </div>
       </div>
     </section>
   );
