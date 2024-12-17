@@ -3,19 +3,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
 interface LeadFormData {
   name: string;
   email: string;
   phone: string;
-}
-
-// Store API key in localStorage (temporary solution)
-const HUBSPOT_API_KEY = localStorage.getItem('HUBSPOT_API_KEY') || '';
-if (!HUBSPOT_API_KEY) {
-  localStorage.setItem('HUBSPOT_API_KEY', 'pat-na1-e2483fef-1e84-4379-a8c5-8915dc072b55');
 }
 
 export const LeadCaptureForm = ({
@@ -52,12 +46,12 @@ export const LeadCaptureForm = ({
         },
       };
 
-      // Send to HubSpot
+      // Send to HubSpot using fetch
       const response = await fetch("https://api.hubapi.com/crm/v3/objects/contacts", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${HUBSPOT_API_KEY}`,
+          Authorization: `Bearer ${import.meta.env.VITE_HUBSPOT_API_KEY}`,
         },
         body: JSON.stringify(hubspotData),
       });
