@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface LeadFormData {
   name: string;
@@ -32,35 +33,17 @@ export const LeadCaptureForm = ({
       setIsSubmitting(true);
       console.log("Submitting lead data:", data);
 
+      // Call our Edge Function
+      const { data: response, error } = await supabase.functions.invoke('create-hubspot-contact', {
+        body: data
+      });
+
+      if (error) throw error;
+
       // Format phone number for WhatsApp
       const phoneNumber = data.phone.replace(/\D/g, "");
       
-      // Create HubSpot contact
-      const hubspotData = {
-        properties: {
-          firstname: data.name,
-          email: data.email,
-          phone: data.phone,
-          lifecyclestage: "lead",
-          lead_source: "Website Form",
-        },
-      };
-
-      // Send to HubSpot using fetch
-      const response = await fetch("https://api.hubapi.com/crm/v3/objects/contacts", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_HUBSPOT_API_KEY}`,
-        },
-        body: JSON.stringify(hubspotData),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to create contact in HubSpot");
-      }
-
-      // Close form and show success message
+      // Show success message
       toast({
         title: "Sucesso!",
         description: "Você será redirecionado para o WhatsApp em instantes.",
