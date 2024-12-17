@@ -12,6 +12,12 @@ interface LeadFormData {
   phone: string;
 }
 
+// Store API key in localStorage (temporary solution)
+const HUBSPOT_API_KEY = localStorage.getItem('HUBSPOT_API_KEY') || '';
+if (!HUBSPOT_API_KEY) {
+  localStorage.setItem('HUBSPOT_API_KEY', 'pat-na1-e2483fef-1e84-4379-a8c5-8915dc072b55');
+}
+
 export const LeadCaptureForm = ({
   open,
   onOpenChange,
@@ -51,7 +57,7 @@ export const LeadCaptureForm = ({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.HUBSPOT_API_KEY}`,
+          Authorization: `Bearer ${HUBSPOT_API_KEY}`,
         },
         body: JSON.stringify(hubspotData),
       });
