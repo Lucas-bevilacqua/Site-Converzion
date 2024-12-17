@@ -21,18 +21,17 @@ serve(async (req) => {
       throw new Error("HubSpot API key not configured");
     }
 
-    // Create HubSpot contact
+    // Create HubSpot contact with only standard properties
     const hubspotData = {
       properties: {
         firstname: name,
         email: email,
         phone: phone,
-        lifecyclestage: "lead",
-        lead_source: "Website Form",
+        lifecyclestage: "lead"
       },
     };
 
-    console.log("Sending request to HubSpot API...");
+    console.log("Sending request to HubSpot API with data:", hubspotData);
     const hubspotResponse = await fetch("https://api.hubapi.com/crm/v3/objects/contacts", {
       method: "POST",
       headers: {
