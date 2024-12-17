@@ -15,6 +15,12 @@ serve(async (req) => {
     const { name, email, phone } = await req.json();
     console.log("Received contact data:", { name, email, phone });
 
+    const hubspotApiKey = Deno.env.get("HUBSPOT_API_KEY");
+    if (!hubspotApiKey) {
+      console.error("HUBSPOT_API_KEY not found in environment variables");
+      throw new Error("HubSpot API key not configured");
+    }
+
     // Create HubSpot contact
     const hubspotData = {
       properties: {
@@ -26,30 +32,37 @@ serve(async (req) => {
       },
     };
 
+    console.log("Sending request to HubSpot API...");
     const hubspotResponse = await fetch("https://api.hubapi.com/crm/v3/objects/contacts", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${Deno.env.get("HUBSPOT_API_KEY")}`,
+        Authorization: `Bearer ${hubspotApiKey}`,
       },
       body: JSON.stringify(hubspotData),
     });
 
+    const responseText = await hubspotResponse.text();
+    console.log("HubSpot API response status:", hubspotResponse.status);
+    console.log("HubSpot API response:", responseText);
+
     if (!hubspotResponse.ok) {
-      console.error("HubSpot API error:", await hubspotResponse.text());
-      throw new Error("Failed to create contact in HubSpot");
+      throw new Error(`HubSpot API error: ${responseText}`);
     }
 
-    const result = await hubspotResponse.json();
-    console.log("HubSpot contact created:", result);
+    const result = JSON.parse(responseText);
+    console.log("HubSpot contact created successfully:", result);
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Error creating contact:", error);
+    console.error("Error in create-hubspot-contact function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: error.stack 
+      }),
       { 
         status: 400, 
         headers: { ...corsHeaders, "Content-Type": "application/json" },

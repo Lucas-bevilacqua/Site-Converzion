@@ -2,3 +2,7 @@ project_id = "navbvwimzfakdzwwzajk"
 
 [api]
 enabled = true
+
+[functions]
+[functions.create-hubspot-contact]
+verify_jwt = false
