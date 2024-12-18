@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
+import { Card } from "@/components/ui/card";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -12,6 +13,8 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [empresaId, setEmpresaId] = useState<number | null>(null);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -23,8 +26,8 @@ const Dashboard = () => {
 
       // Fetch empresa data
       const { data: empresa, error } = await supabase
-        .from('Empresas')
-        .select('id, prompt')
+        .from('empresas')
+        .select('id, prompt, qr_code_url, is_connected')
         .eq('telefoneempresa', session.user.email)
         .single();
 
@@ -41,6 +44,8 @@ const Dashboard = () => {
       if (empresa) {
         setEmpresaId(empresa.id);
         setPrompt(empresa.prompt || "");
+        setQrCodeUrl(empresa.qr_code_url);
+        setIsConnected(empresa.is_connected || false);
       }
     };
 
@@ -52,7 +57,7 @@ const Dashboard = () => {
     
     setLoading(true);
     const { error } = await supabase
-      .from('Empresas')
+      .from('empresas')
       .update({ prompt })
       .eq('id', empresaId);
 
@@ -88,6 +93,32 @@ const Dashboard = () => {
             Sair
           </Button>
         </div>
+
+        {/* QR Code Section */}
+        <Card className="p-6 space-y-4">
+          <h2 className="text-xl font-semibold text-foreground">Status do WhatsApp</h2>
+          <div className="flex items-center space-x-2">
+            <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+            <span className="text-sm text-muted-foreground">
+              {isConnected ? 'Conectado' : 'Desconectado'}
+            </span>
+          </div>
+          
+          {!isConnected && qrCodeUrl && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Escaneie o QR Code abaixo com seu WhatsApp para conectar:
+              </p>
+              <div className="flex justify-center">
+                <img 
+                  src={qrCodeUrl} 
+                  alt="QR Code WhatsApp" 
+                  className="max-w-[300px] h-auto"
+                />
+              </div>
+            </div>
+          )}
+        </Card>
 
         <div className="bg-card p-6 rounded-lg border border-border space-y-4">
           <h2 className="text-xl font-semibold text-foreground">Configuração do Agente IA</h2>
