@@ -1,7 +1,11 @@
 import { motion } from "framer-motion";
 import { ArrowRight, Brain, Sparkles, Bot, Cpu, MessageSquare, Zap, CircuitBoard, Database, ChartBar, TrendingUp, Building2 } from "lucide-react";
+import { useState } from "react";
+import { LeadCaptureForm } from "./LeadCaptureForm";
 
 export const HeroSection = () => {
+  const [showLeadForm, setShowLeadForm] = useState(false);
+
   return (
     <section className="min-h-screen flex items-center justify-center bg-tech-pattern py-20 px-4 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-background via-background/90 to-muted"></div>
@@ -98,35 +102,28 @@ export const HeroSection = () => {
             transition={{ delay: 0.5 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
-            <motion.a
-              href="#agendar-reuniao"
+            <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="px-8 py-4 bg-accent hover:bg-accent-hover text-white rounded-lg font-medium flex items-center gap-2 transition-all duration-300 shadow-lg shadow-accent/20 backdrop-blur-sm w-full sm:w-auto justify-center"
-              onClick={(e) => {
-                e.preventDefault();
+              onClick={() => {
                 const element = document.querySelector('#agendar-reuniao');
                 element?.scrollIntoView({ behavior: 'smooth' });
               }}
             >
               Agendar Demonstração
               <ArrowRight className="w-4 h-4" />
-            </motion.a>
+            </motion.button>
             
-            <motion.a
-              href="#como-funciona"
+            <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="px-6 py-3 border border-primary/20 hover:border-primary/40 text-primary rounded-lg font-medium flex items-center gap-2 transition-all duration-300 backdrop-blur-sm w-full sm:w-auto justify-center"
-              onClick={(e) => {
-                e.preventDefault();
-                const element = document.querySelector('#como-funciona');
-                element?.scrollIntoView({ behavior: 'smooth' });
-              }}
+              onClick={() => setShowLeadForm(true)}
             >
               <MessageSquare className="w-4 h-4" />
               Conhecer a Solução
-            </motion.a>
+            </motion.button>
           </motion.div>
 
           {/* Business metrics */}
@@ -161,6 +158,11 @@ export const HeroSection = () => {
           </div>
         </motion.div>
       </div>
+
+      <LeadCaptureForm 
+        open={showLeadForm} 
+        onOpenChange={setShowLeadForm}
+      />
     </section>
   );
 };
