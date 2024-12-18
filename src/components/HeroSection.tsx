@@ -1,14 +1,28 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Brain, Sparkles, Bot, Cpu, MessageSquare, Zap, CircuitBoard, Database, ChartBar, TrendingUp, Building2 } from "lucide-react";
+import { ArrowRight, Brain, Sparkles, Bot, Cpu, MessageSquare, Zap, CircuitBoard, Database, ChartBar, TrendingUp, Building2, LogIn } from "lucide-react";
 import { useState } from "react";
 import { LeadCaptureForm } from "./LeadCaptureForm";
+import { useNavigate } from "react-router-dom";
 
 export const HeroSection = () => {
   const [showLeadForm, setShowLeadForm] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <section className="min-h-screen flex items-center justify-center bg-tech-pattern py-20 px-4 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-background via-background/90 to-muted"></div>
+      
+      {/* Login button */}
+      <motion.button
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2 }}
+        onClick={() => navigate('/login')}
+        className="absolute top-4 right-4 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-foreground rounded-lg font-medium flex items-center gap-2 transition-all duration-300 backdrop-blur-sm border border-primary/20 z-20"
+      >
+        <LogIn className="w-4 h-4" />
+        Área do Cliente
+      </motion.button>
       
       {/* Floating tech elements with business icons */}
       <motion.div 

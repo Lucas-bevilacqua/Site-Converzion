@@ -41,6 +41,42 @@ export type Database = {
           },
         ]
       }
+      empresas: {
+        Row: {
+          "API Dify": string | null
+          apikeyevo: string | null
+          id: number
+          is_connected: boolean | null
+          nomeempresa: string
+          prompt: string | null
+          qr_code_url: string | null
+          telefoneempresa: string | null
+          url_instance: string | null
+        }
+        Insert: {
+          "API Dify"?: string | null
+          apikeyevo?: string | null
+          id?: number
+          is_connected?: boolean | null
+          nomeempresa: string
+          prompt?: string | null
+          qr_code_url?: string | null
+          telefoneempresa?: string | null
+          url_instance?: string | null
+        }
+        Update: {
+          "API Dify"?: string | null
+          apikeyevo?: string | null
+          id?: number
+          is_connected?: boolean | null
+          nomeempresa?: string
+          prompt?: string | null
+          qr_code_url?: string | null
+          telefoneempresa?: string | null
+          url_instance?: string | null
+        }
+        Relationships: []
+      }
       Empresas: {
         Row: {
           "API Dify": string | null
@@ -70,6 +106,51 @@ export type Database = {
           url_instance?: string | null
         }
         Relationships: []
+      }
+      message_metrics: {
+        Row: {
+          date_recorded: string | null
+          empresa_id: number | null
+          id: number
+          interactions: number | null
+          leads_generated: number | null
+          messages_received: number | null
+          messages_sent: number | null
+        }
+        Insert: {
+          date_recorded?: string | null
+          empresa_id?: number | null
+          id?: number
+          interactions?: number | null
+          leads_generated?: number | null
+          messages_received?: number | null
+          messages_sent?: number | null
+        }
+        Update: {
+          date_recorded?: string | null
+          empresa_id?: number | null
+          id?: number
+          interactions?: number | null
+          leads_generated?: number | null
+          messages_received?: number | null
+          messages_sent?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_empresa"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_metrics_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
