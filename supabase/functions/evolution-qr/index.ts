@@ -49,49 +49,41 @@ serve(async (req) => {
       throw new Error('API key not found for empresa')
     }
 
-    const headers = {
-      'Content-Type': 'application/json',
-      'apikey': empresa.apikeyevo
-    }
-
     // Create instance with updated parameters according to v2.2 docs
     const createInstanceResponse = await fetch(`${instance_url}/instance/create`, {
       method: 'POST',
-      headers,
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': empresa.apikeyevo
+      },
       body: JSON.stringify({
         instanceName: "instance1",
         qrcode: true,
-        integration: "WHATSAPP-BAILEYS",
-        token: null,
-        number: null,
-        webhook: null,
-        webhookByEvents: false,
-        events: []
+        integration: "WHATSAPP-BAILEYS"
       })
     })
 
+    const createData = await createInstanceResponse.json()
+    console.log('Create instance response:', createData)
+
     if (!createInstanceResponse.ok) {
-      const errorData = await createInstanceResponse.json()
-      console.error('❌ Erro ao criar instância:', errorData)
-      throw new Error(`Erro ao criar instância: ${JSON.stringify(errorData)}`)
+      console.error('❌ Erro ao criar instância:', createData)
+      throw new Error(`Erro ao criar instância: ${JSON.stringify(createData)}`)
     }
 
-    const createData = await createInstanceResponse.json()
     console.log('✅ Instância criada:', createData)
 
     // Connect instance to get QR code
     console.log('🔄 Conectando instância para gerar QR code...')
     const connectResponse = await fetch(`${instance_url}/instance/connect`, {
       method: 'POST',
-      headers,
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': empresa.apikeyevo
+      },
       body: JSON.stringify({
         instanceName: "instance1",
-        qrcode: true,
-        number: null,
-        token: null,
-        webhook: null,
-        webhookByEvents: false,
-        events: []
+        qrcode: true
       })
     })
 
@@ -103,12 +95,6 @@ serve(async (req) => {
 
     const connectData = await connectResponse.json()
     console.log('✅ Instância conectada, QR code gerado:', connectData)
-
-    // Extract and process QR code data
-    const qrCodeData = connectData.qrcode
-    if (!qrCodeData) {
-      throw new Error('QR code não foi gerado')
-    }
 
     return new Response(
       JSON.stringify(connectData),
