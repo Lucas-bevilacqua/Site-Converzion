@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export const LoginForm = () => {
   const [email, setEmail] = useState("");
-  const [senha, setSenha] = useState("cliente123"); // Inicializa com a senha padrão
+  const [senha, setSenha] = useState("default123"); // Inicializa com a senha padrão correta
   const { loading, handleEmailSignIn } = useAuth();
   const { toast } = useToast();
 
@@ -59,7 +59,7 @@ export const LoginForm = () => {
           className="w-full"
         />
         <p className="text-sm text-muted-foreground mt-1">
-          Senha padrão pré-preenchida: cliente123
+          Senha padrão pré-preenchida: default123
         </p>
       </div>
 

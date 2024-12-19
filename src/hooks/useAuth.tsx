@@ -2,8 +2,6 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-const DEFAULT_PASSWORD = "cliente123"; // Senha padrão para novos usuários
-
 export const useAuth = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -27,10 +25,14 @@ export const useAuth = () => {
       if (empresaExistente) {
         console.log('✅ Empresa encontrada, tentando fazer login');
         
+        // Usa a senha armazenada no banco de dados
+        const senhaParaLogin = empresaExistente.senha;
+        console.log('🔑 Usando senha do banco:', senhaParaLogin);
+        
         // Tenta fazer login com as credenciais fornecidas
         const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email,
-          password: senha || DEFAULT_PASSWORD,
+          password: senhaParaLogin,
         });
 
         console.log('🔓 Resultado do login:', { signInData, signInError });
@@ -39,7 +41,7 @@ export const useAuth = () => {
           console.error('❌ Erro ao fazer login:', signInError);
           toast({
             title: "Erro no Login",
-            description: `Falha na autenticação: ${signInError.message}. Tente com a senha padrão: ${DEFAULT_PASSWORD}`,
+            description: "Credenciais inválidas. Use a senha padrão: default123",
             variant: "destructive",
           });
           return false;
@@ -57,7 +59,7 @@ export const useAuth = () => {
       console.log('📝 Empresa não encontrada, criando nova conta');
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
-        password: DEFAULT_PASSWORD,
+        password: "default123", // Sempre usa a senha padrão para novos usuários
         options: {
           data: {
             empresa_id: empresa_id,
@@ -84,7 +86,7 @@ export const useAuth = () => {
           {
             id: empresa_id,
             emailempresa: email,
-            senha: DEFAULT_PASSWORD,
+            senha: "default123", // Usa a senha padrão
             NomeEmpresa: 'Nova Empresa'
           }
         ]);
@@ -108,7 +110,7 @@ export const useAuth = () => {
       console.log('🎉 Conta e empresa criadas com sucesso!');
       toast({
         title: "Conta Criada",
-        description: `Sua conta foi criada com sucesso! Sua senha padrão é: ${DEFAULT_PASSWORD}`,
+        description: `Sua conta foi criada com sucesso! Sua senha padrão é: default123`,
       });
       return true;
 
