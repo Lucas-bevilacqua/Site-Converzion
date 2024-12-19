@@ -7,10 +7,7 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  console.log('📥 Nova requisição recebida')
-  
   if (req.method === 'OPTIONS') {
-    console.log('👉 Requisição OPTIONS - retornando headers CORS')
     return new Response('ok', { headers: corsHeaders })
   }
 
@@ -25,8 +22,6 @@ serve(async (req) => {
       )
     }
 
-    console.log('📧 Verificando status para email:', email)
-
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     
@@ -38,10 +33,11 @@ serve(async (req) => {
       )
     }
 
-    const supabaseClient = createClient(supabaseUrl, supabaseKey)
+    const supabaseAdmin = createClient(supabaseUrl, supabaseKey)
 
-    console.log('🔍 Buscando dados da empresa')
-    const { data: empresa, error: empresaError } = await supabaseClient
+    // Get empresa data with Evolution credentials
+    console.log('🔍 Buscando dados da empresa:', email)
+    const { data: empresa, error: empresaError } = await supabaseAdmin
       .from('Empresas')
       .select('url_instance, instance_name, apikeyevo')
       .eq('emailempresa', email)
@@ -50,130 +46,84 @@ serve(async (req) => {
     if (empresaError) {
       console.error('❌ Erro ao buscar empresa:', empresaError)
       return new Response(
-        JSON.stringify({ error: 'Erro ao buscar empresa', details: empresaError }),
+        JSON.stringify({ error: 'Erro ao buscar dados da empresa', details: empresaError }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       )
     }
 
-    if (!empresa) {
-      console.log('❌ Empresa não encontrada')
-      return new Response(
-        JSON.stringify({ 
-          error: 'Empresa não encontrada',
-          needsSetup: true 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
-      )
-    }
-
-    // Log the empresa data for debugging
-    console.log('📊 Dados da empresa encontrados:', {
-      url_instance: empresa.url_instance,
-      instance_name: empresa.instance_name,
-      hasApiKey: !!empresa.apikeyevo
-    })
-
-    if (!empresa.url_instance || !empresa.apikeyevo || !empresa.instance_name) {
-      console.log('❌ Credenciais da Evolution incompletas')
+    // Validate Evolution credentials
+    if (!empresa?.url_instance || !empresa?.apikeyevo || !empresa?.instance_name) {
+      console.log('⚠️ Credenciais do Evolution não configuradas')
       return new Response(
         JSON.stringify({ 
           error: 'Credenciais do Evolution não configuradas',
           needsSetup: true,
           details: {
-            hasUrl: !!empresa.url_instance,
-            hasApiKey: !!empresa.apikeyevo,
-            hasInstanceName: !!empresa.instance_name
+            hasUrl: !!empresa?.url_instance,
+            hasApiKey: !!empresa?.apikeyevo,
+            hasInstanceName: !!empresa?.instance_name
           }
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
     }
 
-    // Clean up the URL and instance name
+    // Clean up the URL
     const baseUrl = empresa.url_instance.split('/message')[0].replace(/\/+$/, '')
     const instanceName = encodeURIComponent(empresa.instance_name.trim())
-    console.log('🌐 URL base da instância:', baseUrl)
-    console.log('📱 Nome da instância (encoded):', instanceName)
+    
+    console.log('🌐 Verificando status na URL:', `${baseUrl}/instance/connectionState/${instanceName}`)
 
-    try {
-      // Primeiro verifica se existem instâncias
-      console.log('📱 Verificando instâncias existentes')
-      const fetchInstancesResponse = await fetch(`${baseUrl}/instance/fetchInstances`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': empresa.apikeyevo
-        }
-      })
-
-      if (!fetchInstancesResponse.ok) {
-        console.error('❌ Erro ao buscar instâncias:', await fetchInstancesResponse.text())
-        return new Response(
-          JSON.stringify({ error: 'Erro ao verificar instâncias', needsSetup: true }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
-        )
+    // Check Evolution connection status
+    const statusResponse = await fetch(`${baseUrl}/instance/connectionState/${instanceName}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': empresa.apikeyevo
       }
+    })
 
-      // Verifica status da conexão
-      console.log('📱 Verificando status da conexão:', instanceName)
-      const statusResponse = await fetch(`${baseUrl}/instance/connectionState/${instanceName}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': empresa.apikeyevo
-        }
-      })
-
-      if (!statusResponse.ok) {
-        const errorText = await statusResponse.text()
-        console.error('❌ Erro na resposta do Evolution:', errorText)
-        
-        if (statusResponse.status === 404) {
-          return new Response(
-            JSON.stringify({ error: 'Instância não encontrada', needsSetup: true }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
-          )
-        }
-        
-        throw new Error(`Evolution API returned ${statusResponse.status}: ${errorText}`)
-      }
-
-      const statusData = await statusResponse.json()
-      console.log('✅ Status data:', statusData)
-
-      // Update connection status in database
-      const isConnected = statusData.state === 'open'
-      const { error: updateError } = await supabaseClient
-        .from('Empresas')
-        .update({ is_connected: isConnected })
-        .eq('emailempresa', email)
-
-      if (updateError) {
-        console.error('❌ Erro ao atualizar status:', updateError)
-      }
-
+    if (!statusResponse.ok) {
+      const errorText = await statusResponse.text()
+      console.error('❌ Erro na resposta do Evolution:', errorText)
+      
       return new Response(
         JSON.stringify({ 
-          success: true, 
-          isConnected,
-          state: statusData.state,
-          instanceExists: true
+          error: 'Erro ao verificar status do Evolution',
+          details: errorText,
+          needsSetup: statusResponse.status === 404
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-
-    } catch (error) {
-      console.error('❌ Erro ao verificar status:', error)
-      return new Response(
-        JSON.stringify({ error: `Erro ao verificar status: ${error.message}` }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: statusResponse.status }
       )
     }
+
+    const statusData = await statusResponse.json()
+    console.log('✅ Status do Evolution:', statusData)
+
+    // Update connection status in database
+    const isConnected = statusData.state === 'open'
+    const { error: updateError } = await supabaseAdmin
+      .from('Empresas')
+      .update({ is_connected: isConnected })
+      .eq('emailempresa', email)
+
+    if (updateError) {
+      console.error('❌ Erro ao atualizar status:', updateError)
+    }
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        isConnected,
+        state: statusData.state
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
 
   } catch (error) {
     console.error('❌ Erro na função:', error)
     return new Response(
-      JSON.stringify({ error: 'Erro interno do servidor' }),
+      JSON.stringify({ error: 'Erro interno do servidor', details: error.message }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     )
   }
