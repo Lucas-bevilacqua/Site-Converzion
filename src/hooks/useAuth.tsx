@@ -21,26 +21,9 @@ export const useAuth = () => {
       if (signInError) {
         console.log('Erro no login:', signInError);
         
-        // Se o erro for de credenciais inválidas, verifica se o usuário existe
+        // Se o erro for de credenciais inválidas, tenta criar uma nova conta
         if (signInError.message?.includes('Invalid login credentials')) {
-          console.log('Credenciais inválidas, verificando se usuário existe...');
-          const { data: userExists } = await supabase
-            .from('auth.users')
-            .select('email')
-            .eq('email', email)
-            .single();
-
-          if (userExists) {
-            toast({
-              title: "Erro no Login",
-              description: "Senha incorreta. Por favor, tente novamente.",
-              variant: "destructive",
-            });
-            return false;
-          }
-
-          // Se o usuário não existe, tenta criar uma nova conta
-          console.log('Usuário não existe, tentando criar conta...');
+          console.log('Credenciais inválidas, tentando criar conta...');
           const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
             email,
             password: senha,
@@ -53,8 +36,8 @@ export const useAuth = () => {
           if (signUpError) {
             if (signUpError.message?.includes('User already registered')) {
               toast({
-                title: "Usuário Existente",
-                description: "Este email já está registrado. Por favor, tente fazer login.",
+                title: "Erro no Login",
+                description: "Senha incorreta. Por favor, tente novamente.",
                 variant: "destructive",
               });
             } else {
