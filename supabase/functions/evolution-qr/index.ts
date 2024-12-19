@@ -46,8 +46,13 @@ serve(async (req) => {
       throw new Error('API key not found for empresa')
     }
 
+    // Clean up the URL to ensure it's just the base URL without any trailing paths
+    const baseUrl = instance_url.split('/message')[0].replace(/\/$/, '')
+    console.log('URL base da instância:', baseUrl)
+    
     // Create instance with updated parameters according to v2.2 docs
-    const createInstanceResponse = await fetch(`${instance_url}/instance/create`, {
+    console.log('🔄 Criando nova instância...')
+    const createInstanceResponse = await fetch(`${baseUrl}/instance/create`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -70,9 +75,9 @@ serve(async (req) => {
 
     console.log('✅ Instância criada:', createData)
 
-    // Connect instance to get QR code - Changed to GET method
+    // Connect instance to get QR code
     console.log('🔄 Conectando instância para gerar QR code...')
-    const connectResponse = await fetch(`${instance_url}/instance/connect/instance1`, {
+    const connectResponse = await fetch(`${baseUrl}/instance/connect/instance1`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
