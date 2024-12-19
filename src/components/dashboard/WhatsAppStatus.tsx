@@ -60,24 +60,30 @@ export const WhatsAppStatus = () => {
 
         if (error) {
           console.error('❌ Erro ao verificar status:', error);
-          const errorBody = JSON.parse(error.message);
           
-          // Verifica se o erro indica que precisa de configuração
-          if (errorBody?.error === 'Credenciais do Evolution não configuradas' || 
-              errorBody?.needsSetup === true) {
-            console.log('⚙️ Evolution precisa ser configurado');
-            setNeedsSetup(true);
-            setIsConnected(false);
+          try {
+            // Tenta parsear o corpo da resposta que contém os detalhes do erro
+            const errorBody = JSON.parse(error.body || '{}');
             
-            // Atualiza o status no banco
-            const { error: updateError } = await supabase
-              .from('Empresas')
-              .update({ is_connected: false })
-              .eq('emailempresa', session.user.email);
+            // Verifica se o erro indica que precisa de configuração
+            if (errorBody?.error === 'Credenciais do Evolution não configuradas' || 
+                errorBody?.needsSetup === true) {
+              console.log('⚙️ Evolution precisa ser configurado');
+              setNeedsSetup(true);
+              setIsConnected(false);
+              
+              // Atualiza o status no banco
+              const { error: updateError } = await supabase
+                .from('Empresas')
+                .update({ is_connected: false })
+                .eq('emailempresa', session.user.email);
 
-            if (updateError) {
-              console.error('❌ Erro ao atualizar status no banco:', updateError);
+              if (updateError) {
+                console.error('❌ Erro ao atualizar status no banco:', updateError);
+              }
             }
+          } catch (parseError) {
+            console.error('❌ Erro ao parsear resposta do erro:', parseError);
           }
           return;
         }
