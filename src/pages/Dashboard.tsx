@@ -27,9 +27,8 @@ const Dashboard = () => {
 
       console.log('Fetching empresa data for email:', session.user.email);
       
-      // Fetch empresa data
       const { data: empresa, error } = await supabase
-        .from('Empresas')  // Corrigido para maiúsculo
+        .from('Empresas')
         .select('id, prompt, qr_code_url, is_connected, telefoneempresa')
         .eq('emailempresa', session.user.email)
         .single();
@@ -45,7 +44,11 @@ const Dashboard = () => {
       }
 
       if (empresa) {
-        console.log('Empresa data loaded:', { id: empresa.id, hasPrompt: !!empresa.prompt, hasQR: !!empresa.qr_code_url });
+        console.log('Empresa data loaded:', { 
+          id: empresa.id, 
+          hasPrompt: !!empresa.prompt, 
+          hasQR: !!empresa.qr_code_url 
+        });
         setEmpresaId(empresa.id);
         setPrompt(empresa.prompt || "");
         setQrCodeUrl(empresa.qr_code_url);
@@ -124,7 +127,7 @@ const Dashboard = () => {
     
     setLoading(true);
     const { error } = await supabase
-      .from('Empresas')  // Corrigido para maiúsculo
+      .from('Empresas')
       .update({ prompt })
       .eq('id', empresaId);
 

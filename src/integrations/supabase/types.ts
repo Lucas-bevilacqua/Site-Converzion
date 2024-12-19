@@ -47,8 +47,10 @@ export type Database = {
           apikeyevo: string | null
           emailempresa: string | null
           id: number
+          is_connected: boolean | null
           NomeEmpresa: string
           prompt: string | null
+          qr_code_url: string | null
           senha: string
           telefoneempresa: string | null
           url_instance: string | null
@@ -58,8 +60,10 @@ export type Database = {
           apikeyevo?: string | null
           emailempresa?: string | null
           id?: number
+          is_connected?: boolean | null
           NomeEmpresa: string
           prompt?: string | null
+          qr_code_url?: string | null
           senha: string
           telefoneempresa?: string | null
           url_instance?: string | null
@@ -69,8 +73,10 @@ export type Database = {
           apikeyevo?: string | null
           emailempresa?: string | null
           id?: number
+          is_connected?: boolean | null
           NomeEmpresa?: string
           prompt?: string | null
+          qr_code_url?: string | null
           senha?: string
           telefoneempresa?: string | null
           url_instance?: string | null
