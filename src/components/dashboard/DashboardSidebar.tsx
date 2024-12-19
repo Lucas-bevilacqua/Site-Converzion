@@ -1,67 +1,39 @@
-import { useNavigate } from "react-router-dom";
-import { Home, QrCode, Settings, LogOut } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@/components/ui/sidebar";
+import { Link, useLocation } from 'react-router-dom';
+import { Settings, MessageSquare } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
 
-export function DashboardSidebar() {
-  const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate('/');
-  };
-
-  const items = [
-    {
-      title: "Dashboard",
-      icon: Home,
-      onClick: () => navigate('/dashboard')
-    },
-    {
-      title: "WhatsApp",
-      icon: QrCode,
-      onClick: () => navigate('/dashboard')
-    },
-    {
-      title: "Configurações",
-      icon: Settings,
-      onClick: () => navigate('/dashboard/settings')
-    },
-    {
-      title: "Sair",
-      icon: LogOut,
-      onClick: handleLogout
-    }
-  ];
+export default function DashboardSidebar() {
+  const { signOut } = useAuth();
+  const location = useLocation();
 
   return (
-    <Sidebar>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Menu</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton onClick={item.onClick}>
-                    <item.icon className="w-5 h-5" />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-    </Sidebar>
+    <div className="w-64 bg-card border-r border-border h-screen p-4 flex flex-col">
+      <div className="flex-1 space-y-2">
+        <Link to="/dashboard">
+          <Button
+            variant={location.pathname === '/dashboard' ? 'secondary' : 'ghost'}
+            className="w-full justify-start"
+          >
+            <MessageSquare className="mr-2 h-4 w-4" />
+            Chat
+          </Button>
+        </Link>
+        
+        <Link to="/dashboard/settings">
+          <Button
+            variant={location.pathname === '/dashboard/settings' ? 'secondary' : 'ghost'}
+            className="w-full justify-start"
+          >
+            <Settings className="mr-2 h-4 w-4" />
+            Configurações
+          </Button>
+        </Link>
+      </div>
+
+      <Button variant="outline" onClick={signOut} className="w-full">
+        Sair
+      </Button>
+    </div>
   );
 }
