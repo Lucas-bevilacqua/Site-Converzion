@@ -81,6 +81,16 @@ serve(async (req) => {
       
       if (stateData.state === 'open' || stateData.state === 'connected') {
         console.log('Instance is already connected')
+        
+        // Update empresa status to connected
+        await supabaseClient
+          .from('Empresas')
+          .update({ 
+            is_connected: true,
+            qr_code_url: null // Clear QR code since we're connected
+          })
+          .eq('id', empresa_id)
+        
         return new Response(
           JSON.stringify({ 
             success: true, 
