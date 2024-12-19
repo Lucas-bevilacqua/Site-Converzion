@@ -25,7 +25,7 @@ serve(async (req) => {
     }
 
     // First create the instance
-    console.log('🔄 Criando nova instância...')
+    console.log('🔄 Criando nova instância...', instance_url)
     const createInstanceResponse = await fetch(`${instance_url}/instance/create`, {
       method: 'POST',
       headers: {
@@ -33,17 +33,17 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         instanceName: "instance1",
-        webhook: null,
-        webhookByEvents: false,
-        events: [],
         qrcode: true,
         number: null,
         token: null,
-        // Added required parameters from Evolution API v2.2.0
+        webhook: null,
+        webhookByEvents: false,
+        events: [],
+        // Evolution API v2.2.0 required parameters
         isLatest: true,
         waitQrCode: true,
         license: "free",
-        connectionType: "whatsapp-baileys"
+        connectionType: "WHATSAPP-BAILEYS"
       })
     })
 
@@ -65,18 +65,18 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         instanceName: "instance1",
-        webhook: null,
-        webhookByEvents: false,
-        events: [],
         qrcode: true,
         number: null,
         token: null,
-        // Added required parameters from Evolution API v2.2.0
+        webhook: null,
+        webhookByEvents: false,
+        events: [],
+        // Evolution API v2.2.0 required parameters
         client: "evolution_v2",
         version: "2.2.0",
         waitQrCode: true,
         license: "free",
-        connectionType: "whatsapp-baileys"
+        connectionType: "WHATSAPP-BAILEYS"
       })
     })
 
