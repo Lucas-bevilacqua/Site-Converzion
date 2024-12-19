@@ -52,12 +52,12 @@ const Login = () => {
 
       // Tentar fazer login primeiro
       console.log('Tentando fazer login direto');
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password: senha,
       });
 
-      // Se o login falhar, criar o usuário
+      // Se o login falhar, verificar se é porque o usuário não existe
       if (signInError) {
         console.log('Login falhou, tentando criar usuário:', signInError);
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
@@ -66,7 +66,8 @@ const Login = () => {
           options: {
             data: {
               empresa_id: empresa.id
-            }
+            },
+            emailRedirectTo: `${window.location.origin}/login`
           }
         });
 
@@ -83,25 +84,26 @@ const Login = () => {
         
         console.log('Usuário criado com sucesso:', signUpData);
         
-        // Adicionar um delay maior antes de tentar fazer login
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        // Tentar fazer login novamente após criar o usuário
-        const { error: finalLoginError } = await supabase.auth.signInWithPassword({
-          email,
-          password: senha,
+        // Mostrar mensagem de confirmação de email
+        toast({
+          title: "Sucesso",
+          description: "Um email de confirmação foi enviado. Por favor, verifique sua caixa de entrada e confirme seu email antes de fazer login.",
         });
+        setLoading(false);
+        return;
+      }
 
-        if (finalLoginError) {
-          console.error('Erro no login final:', finalLoginError);
-          toast({
-            title: "Erro",
-            description: "Erro ao fazer login após criar usuário: " + finalLoginError.message,
-            variant: "destructive",
-          });
-          setLoading(false);
-          return;
-        }
+      // Se chegou aqui, o login foi bem sucedido
+      // Verificar se o email foi confirmado
+      if (!signInData.user?.email_confirmed_at) {
+        console.log('Email ainda não confirmado');
+        toast({
+          title: "Erro",
+          description: "Por favor, confirme seu email antes de fazer login. Verifique sua caixa de entrada.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
       }
 
       console.log('Login realizado com sucesso');
