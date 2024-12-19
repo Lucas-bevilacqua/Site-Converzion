@@ -10,7 +10,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-// Removendo a interface de props já que o componente gerencia seu próprio estado
 export const WhatsAppStatus = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [qrCode, setQrCode] = useState<string | null>(null);
@@ -22,7 +21,6 @@ export const WhatsAppStatus = () => {
     try {
       console.log('🔍 Verificando status da conexão...');
       
-      // Pega o usuário atual
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.email) {
         console.log('❌ Usuário não autenticado');
@@ -31,7 +29,7 @@ export const WhatsAppStatus = () => {
 
       const { data: empresa, error: empresaError } = await supabase
         .from('Empresas')
-        .select('url_instance, instance_name, apikeyevo')
+        .select('url_instance, instance_name, apikeyevo, is_connected')
         .eq('emailempresa', session.user.email)
         .single();
 
@@ -42,6 +40,7 @@ export const WhatsAppStatus = () => {
 
       console.log('📱 Instance name:', empresa.instance_name);
       console.log('🔗 URL da instância:', empresa.url_instance);
+      console.log('🔌 Status atual:', empresa.is_connected ? 'Conectado' : 'Desconectado');
 
       const { data, error } = await supabase.functions.invoke('evolution-status', {
         body: { email: session.user.email }
@@ -54,6 +53,18 @@ export const WhatsAppStatus = () => {
 
       console.log('✅ Status da conexão:', data);
       setIsConnected(data.isConnected);
+
+      // Atualiza o status no banco de dados se for diferente
+      if (empresa.is_connected !== data.isConnected) {
+        const { error: updateError } = await supabase
+          .from('Empresas')
+          .update({ is_connected: data.isConnected })
+          .eq('emailempresa', session.user.email);
+
+        if (updateError) {
+          console.error('❌ Erro ao atualizar status no banco:', updateError);
+        }
+      }
 
     } catch (error) {
       console.error('❌ Erro ao verificar status:', error);
@@ -72,7 +83,6 @@ export const WhatsAppStatus = () => {
       setIsLoading(true);
       console.log('🔄 Iniciando processo de conexão...');
       
-      // Pega o usuário atual
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.email) {
         console.log('❌ Usuário não autenticado');
