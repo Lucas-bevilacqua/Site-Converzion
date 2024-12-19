@@ -29,9 +29,9 @@ const Dashboard = () => {
       
       // Fetch empresa data
       const { data: empresa, error } = await supabase
-        .from('empresas')
+        .from('Empresas')  // Corrigido para maiúsculo
         .select('id, prompt, qr_code_url, is_connected, telefoneempresa')
-        .eq('telefoneempresa', session.user.email)
+        .eq('emailempresa', session.user.email)
         .single();
 
       if (error) {
@@ -124,7 +124,7 @@ const Dashboard = () => {
     
     setLoading(true);
     const { error } = await supabase
-      .from('empresas')
+      .from('Empresas')  // Corrigido para maiúsculo
       .update({ prompt })
       .eq('id', empresaId);
 

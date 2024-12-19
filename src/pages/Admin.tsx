@@ -58,7 +58,7 @@ export default function Admin() {
   async function fetchEmpresas() {
     try {
       const { data, error } = await supabase
-        .from("empresas")
+        .from("Empresas")
         .select("*")
         .order("id", { ascending: true });
 
@@ -76,15 +76,16 @@ export default function Admin() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       setLoading(true);
-      const { error } = await supabase.from("empresas").insert([
+      const { error } = await supabase.from("Empresas").insert([
         {
-          nomeempresa: values.nomeempresa,
+          NomeEmpresa: values.nomeempresa,
           telefoneempresa: values.telefoneempresa,
           emailempresa: values.emailempresa,
           "API Dify": values.apidify,
           url_instance: values.urlinstance,
           apikeyevo: values.apikeyevo,
           prompt: values.prompt,
+          senha: "default123",
         },
       ]);
 
@@ -230,7 +231,7 @@ export default function Admin() {
                 className="p-4 border rounded-lg shadow-sm space-y-2"
               >
                 <p>
-                  <strong>Nome:</strong> {empresa.nomeempresa}
+                  <strong>Nome:</strong> {empresa.NomeEmpresa}
                 </p>
                 <p>
                   <strong>Email:</strong> {empresa.emailempresa}
