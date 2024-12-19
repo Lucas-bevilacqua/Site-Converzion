@@ -9,6 +9,50 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ConnectionStatus } from "./ConnectionStatus";
+
+// Componente para o QR Code
+const QRCodeDialog = ({ showQRCode, setShowQRCode, qrCode, needsSetup }) => (
+  <Dialog open={showQRCode} onOpenChange={setShowQRCode}>
+    <DialogContent className="sm:max-w-md">
+      <DialogHeader>
+        <DialogTitle>
+          {needsSetup ? 'Configurar WhatsApp' : 'Conectar WhatsApp'}
+        </DialogTitle>
+      </DialogHeader>
+      <div className="flex items-center justify-center p-6">
+        {qrCode && (
+          <img
+            src={qrCode}
+            alt="QR Code para conexão do WhatsApp"
+            className="w-64 h-64"
+          />
+        )}
+      </div>
+    </DialogContent>
+  </Dialog>
+);
+
+// Componente para o botão de conexão
+const ConnectButton = ({ handleConnect, isLoading, isConnected, needsSetup }) => (
+  <Button
+    onClick={handleConnect}
+    disabled={isLoading}
+    variant={isConnected ? "outline" : "default"}
+  >
+    {isLoading ? (
+      <>
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        Conectando...
+      </>
+    ) : (
+      <>
+        <QrCode className="mr-2 h-4 w-4" />
+        {needsSetup ? 'Configurar WhatsApp' : isConnected ? 'Reconectar' : 'Conectar WhatsApp'}
+      </>
+    )}
+  </Button>
+);
 
 export const WhatsAppStatus = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -43,7 +87,7 @@ export const WhatsAppStatus = () => {
 
       console.log('📱 Instance name:', empresa.instance_name);
       console.log('🔗 URL da instância:', empresa.url_instance);
-      console.log('🔌 Status atual:', empresa.is_connected ? 'Conectado' : 'Desconectado');
+      console.log('🔌 Status atual no banco:', empresa.is_connected ? 'Conectado' : 'Desconectado');
 
       // Verifica o status atual no Evolution API
       const { data, error } = await supabase.functions.invoke('evolution-status', {
@@ -52,22 +96,25 @@ export const WhatsAppStatus = () => {
 
       if (error) {
         console.error('❌ Erro ao verificar status:', error);
-        setIsConnected(false);
-        if (error.message.includes('Instância não encontrada')) {
+        // Mantém o status atual do banco se houver erro na API
+        setIsConnected(empresa.is_connected || false);
+        if (error.message?.includes('Instância não encontrada')) {
           setNeedsSetup(true);
         }
         return;
       }
 
-      console.log('✅ Status da conexão:', data);
-      setIsConnected(data.isConnected);
+      console.log('✅ Status retornado pela API:', data);
+      const newConnectionStatus = data.isConnected || false;
+      setIsConnected(newConnectionStatus);
       setNeedsSetup(data.needsSetup || false);
 
       // Atualiza o status no banco de dados se for diferente
-      if (empresa.is_connected !== data.isConnected) {
+      if (empresa.is_connected !== newConnectionStatus) {
+        console.log('🔄 Atualizando status no banco:', newConnectionStatus);
         const { error: updateError } = await supabase
           .from('Empresas')
-          .update({ is_connected: data.isConnected })
+          .update({ is_connected: newConnectionStatus })
           .eq('emailempresa', session.user.email);
 
         if (updateError) {
@@ -77,7 +124,6 @@ export const WhatsAppStatus = () => {
 
     } catch (error) {
       console.error('❌ Erro ao verificar status:', error);
-      setIsConnected(false);
       toast({
         variant: "destructive",
         title: "Erro",
@@ -88,7 +134,6 @@ export const WhatsAppStatus = () => {
 
   useEffect(() => {
     checkConnectionStatus();
-    // Verificar status a cada 30 segundos
     const interval = setInterval(checkConnectionStatus, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -161,45 +206,21 @@ export const WhatsAppStatus = () => {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4">
-        <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-        <span>{isConnected ? 'Conectado' : needsSetup ? 'Não configurado' : 'Desconectado'}</span>
-        <Button
-          onClick={handleConnect}
-          disabled={isLoading}
-          variant={isConnected ? "outline" : "default"}
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Conectando...
-            </>
-          ) : (
-            <>
-              <QrCode className="mr-2 h-4 w-4" />
-              {needsSetup ? 'Configurar WhatsApp' : isConnected ? 'Reconectar' : 'Conectar WhatsApp'}
-            </>
-          )}
-        </Button>
+        <ConnectionStatus isConnected={isConnected} />
+        <ConnectButton 
+          handleConnect={handleConnect}
+          isLoading={isLoading}
+          isConnected={isConnected}
+          needsSetup={needsSetup}
+        />
       </div>
 
-      <Dialog open={showQRCode} onOpenChange={setShowQRCode}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {needsSetup ? 'Configurar WhatsApp' : 'Conectar WhatsApp'}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex items-center justify-center p-6">
-            {qrCode && (
-              <img
-                src={qrCode}
-                alt="QR Code para conexão do WhatsApp"
-                className="w-64 h-64"
-              />
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <QRCodeDialog 
+        showQRCode={showQRCode}
+        setShowQRCode={setShowQRCode}
+        qrCode={qrCode}
+        needsSetup={needsSetup}
+      />
     </div>
   );
 };
