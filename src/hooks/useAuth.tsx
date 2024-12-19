@@ -19,34 +19,70 @@ export const useAuth = () => {
       });
 
       if (signInError) {
-        console.log('Erro no login, tentando criar conta...');
-        // Se o login falhar, tenta criar uma nova conta
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email,
-          password: senha,
-          options: {
-            data: { empresa_id },
-            emailRedirectTo: window.location.origin + '/login'
-          }
-        });
+        console.log('Erro no login:', signInError);
+        
+        // Se o erro for de credenciais inválidas, verifica se o usuário existe
+        if (signInError.message?.includes('Invalid login credentials')) {
+          console.log('Credenciais inválidas, verificando se usuário existe...');
+          const { data: userExists } = await supabase
+            .from('auth.users')
+            .select('email')
+            .eq('email', email)
+            .single();
 
-        if (signUpError) {
-          console.error('Erro ao criar conta:', signUpError);
+          if (userExists) {
+            toast({
+              title: "Erro no Login",
+              description: "Senha incorreta. Por favor, tente novamente.",
+              variant: "destructive",
+            });
+            return false;
+          }
+
+          // Se o usuário não existe, tenta criar uma nova conta
+          console.log('Usuário não existe, tentando criar conta...');
+          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+            email,
+            password: senha,
+            options: {
+              data: { empresa_id },
+              emailRedirectTo: window.location.origin + '/login'
+            }
+          });
+
+          if (signUpError) {
+            if (signUpError.message?.includes('User already registered')) {
+              toast({
+                title: "Usuário Existente",
+                description: "Este email já está registrado. Por favor, tente fazer login.",
+                variant: "destructive",
+              });
+            } else {
+              console.error('Erro ao criar conta:', signUpError);
+              toast({
+                title: "Erro no Cadastro",
+                description: signUpError.message,
+                variant: "destructive",
+              });
+            }
+            return false;
+          }
+
+          if (signUpData?.user) {
+            console.log('Conta criada com sucesso:', signUpData);
+            toast({
+              title: "Conta Criada",
+              description: "Sua conta foi criada com sucesso! Você será redirecionado para o dashboard.",
+            });
+            return true;
+          }
+        } else {
           toast({
-            title: "Erro no Cadastro",
-            description: signUpError.message,
+            title: "Erro no Login",
+            description: signInError.message,
             variant: "destructive",
           });
           return false;
-        }
-
-        if (signUpData?.user) {
-          console.log('Conta criada com sucesso:', signUpData);
-          toast({
-            title: "Conta Criada",
-            description: "Sua conta foi criada com sucesso! Você será redirecionado para o dashboard.",
-          });
-          return true;
         }
       }
 
