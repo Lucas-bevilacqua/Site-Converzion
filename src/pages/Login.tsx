@@ -17,7 +17,7 @@ const Login = () => {
     setLoading(true);
 
     try {
-      console.log('Verificando credenciais para:', email);
+      console.log('Iniciando processo de login para:', email);
       
       // Primeiro, verificar se o email e senha correspondem a uma empresa
       const { data: empresa, error: empresaError } = await supabase
@@ -26,8 +26,8 @@ const Login = () => {
         .eq('emailempresa', email)
         .single();
 
-      if (empresaError || !empresa) {
-        console.error('Email não encontrado:', empresaError);
+      if (empresaError) {
+        console.error('Erro ao buscar empresa:', empresaError);
         toast({
           title: "Erro",
           description: "Email não encontrado no sistema",
@@ -37,8 +37,10 @@ const Login = () => {
         return;
       }
 
+      console.log('Empresa encontrada, verificando senha');
+
       if (empresa.senha !== senha) {
-        console.error('Senha incorreta');
+        console.error('Senha incorreta para o email:', email);
         toast({
           title: "Erro",
           description: "Senha incorreta",
@@ -49,29 +51,38 @@ const Login = () => {
       }
 
       // Verificar se o usuário já existe no Auth
+      console.log('Verificando se usuário existe no Auth');
       const { data: { user }, error: getUserError } = await supabase.auth.getUser();
       
       if (!user) {
         // Se o usuário não existe no Auth, criar
-        console.log('Criando usuário no Auth...');
-        const { error: signUpError } = await supabase.auth.signUp({
+        console.log('Usuário não existe no Auth, criando...');
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password: senha,
+          options: {
+            data: {
+              empresa_id: empresa.id
+            }
+          }
         });
 
         if (signUpError) {
           console.error('Erro ao criar usuário:', signUpError);
           toast({
             title: "Erro",
-            description: "Erro ao criar usuário no sistema",
+            description: "Erro ao criar usuário no sistema: " + signUpError.message,
             variant: "destructive",
           });
           setLoading(false);
           return;
         }
+        
+        console.log('Usuário criado com sucesso:', signUpData);
       }
 
       // Fazer login
+      console.log('Tentando fazer login com Auth');
       const { error: authError } = await supabase.auth.signInWithPassword({
         email,
         password: senha,
@@ -81,7 +92,7 @@ const Login = () => {
         console.error('Erro ao fazer login:', authError);
         toast({
           title: "Erro",
-          description: "Erro ao fazer login",
+          description: "Erro ao fazer login: " + authError.message,
           variant: "destructive",
         });
         setLoading(false);
