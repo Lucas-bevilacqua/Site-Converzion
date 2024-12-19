@@ -10,7 +10,11 @@ const Login = () => {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
-        navigate('/dashboard');
+        if (session.user.email === 'admin@example.com') {
+          navigate('/admin');
+        } else {
+          navigate('/dashboard');
+        }
       }
     });
 
