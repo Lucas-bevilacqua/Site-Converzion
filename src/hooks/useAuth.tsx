@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { removeExistingEmpresa, createEmpresa } from "@/services/auth/empresa.service";
+import { signUpUser } from "@/services/auth/auth.service";
 
 export const useAuth = () => {
   const { toast } = useToast();
@@ -12,33 +13,16 @@ export const useAuth = () => {
     console.log('📧 Email:', email);
 
     try {
-      // Primeiro, tenta remover a empresa existente
-      console.log('🗑️ Tentando remover empresa existente');
-      const { error: deleteError } = await supabase
-        .from('Empresas')
-        .delete()
-        .eq('emailempresa', email);
-
-      if (deleteError) {
-        console.log('⚠️ Erro ao tentar remover empresa ou empresa não existia:', deleteError);
-      } else {
-        console.log('✅ Empresa removida com sucesso ou não existia');
+      // Remove empresa existente
+      const { error: removeError } = await removeExistingEmpresa(email);
+      if (removeError) {
+        console.log('⚠️ Erro ao tentar remover empresa:', removeError);
       }
 
-      // Agora vamos criar uma nova conta
-      console.log('📝 Criando nova conta e empresa');
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password: "default123",
-        options: {
-          data: {
-            empresa_id: empresa_id,
-          }
-        }
-      });
-
-      if (signUpError) {
-        console.error('❌ Erro ao criar conta:', signUpError);
+      // Cria nova conta
+      const { success, error: signUpError } = await signUpUser(email, "default123", empresa_id);
+      
+      if (!success) {
         toast({
           title: "Erro no Cadastro",
           description: "Não foi possível criar sua conta. Tente novamente.",
@@ -47,23 +31,16 @@ export const useAuth = () => {
         return false;
       }
 
-      // Cria o registro da empresa
-      const { error: createEmpresaError } = await supabase
-        .from('Empresas')
-        .insert([
-          {
-            id: empresa_id,
-            emailempresa: email,
-            senha: "default123",
-            NomeEmpresa: 'Nova Empresa'
-          }
-        ]);
+      // Cria nova empresa
+      const { error: createEmpresaError } = await createEmpresa({
+        id: empresa_id,
+        emailempresa: email,
+        senha: "default123",
+        NomeEmpresa: 'Nova Empresa'
+      });
 
       if (createEmpresaError) {
         console.error('❌ Erro ao criar empresa:', createEmpresaError);
-        if (signUpData.user) {
-          await supabase.auth.admin.deleteUser(signUpData.user.id);
-        }
         toast({
           title: "Erro ao Criar Empresa",
           description: "Ocorreu um erro ao criar sua empresa. Tente novamente.",
