@@ -33,6 +33,7 @@ const Login = () => {
           description: "Email não encontrado no sistema",
           variant: "destructive",
         });
+        setLoading(false);
         return;
       }
 
@@ -43,10 +44,34 @@ const Login = () => {
           description: "Senha incorreta",
           variant: "destructive",
         });
+        setLoading(false);
         return;
       }
 
-      // Se as credenciais estiverem corretas, criar uma sessão
+      // Verificar se o usuário já existe no Auth
+      const { data: { user }, error: getUserError } = await supabase.auth.getUser();
+      
+      if (!user) {
+        // Se o usuário não existe no Auth, criar
+        console.log('Criando usuário no Auth...');
+        const { error: signUpError } = await supabase.auth.signUp({
+          email,
+          password: senha,
+        });
+
+        if (signUpError) {
+          console.error('Erro ao criar usuário:', signUpError);
+          toast({
+            title: "Erro",
+            description: "Erro ao criar usuário no sistema",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Fazer login
       const { error: authError } = await supabase.auth.signInWithPassword({
         email,
         password: senha,
@@ -59,6 +84,7 @@ const Login = () => {
           description: "Erro ao fazer login",
           variant: "destructive",
         });
+        setLoading(false);
         return;
       }
 
