@@ -35,7 +35,7 @@ function ProtectedRoute({ children, adminOnly = false }) {
     return <Navigate to="/login" />;
   }
 
-  if (adminOnly && session.user.email !== 'admin@example.com') {
+  if (adminOnly && session.user.email !== 'lucasobevi@gmail.com') {
     return <Navigate to="/" />;
   }
 

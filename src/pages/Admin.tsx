@@ -35,7 +35,7 @@ const Admin = () => {
 
   const checkAdmin = async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session || session.user.email !== 'admin@example.com') { // Substitua pelo email do admin
+    if (!session || session.user.email !== 'lucasobevi@gmail.com') {
       navigate('/');
       toast({
         title: "Acesso negado",
