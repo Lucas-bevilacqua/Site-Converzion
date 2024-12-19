@@ -29,7 +29,7 @@ export const useAuth = () => {
             password: senha,
             options: {
               data: { empresa_id },
-              emailRedirectTo: `${window.location.origin}/login`
+              emailRedirectTo: 'https://preview--engage-convert-ai.lovable.app/login'
             }
           });
 
