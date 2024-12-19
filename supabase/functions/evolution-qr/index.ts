@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -35,16 +35,16 @@ serve(async (req) => {
     }
 
     const supabaseClient = createClient(supabaseUrl, supabaseKey)
-    
-    // Get empresa data for the specific email
+
+    // Get empresa data
     const { data: empresa, error: empresaError } = await supabaseClient
       .from('Empresas')
-      .select('url_instance, instance_name, apikeyevo')
+      .select('*')
       .eq('emailempresa', email)
       .single()
 
     if (empresaError || !empresa) {
-      console.error('Erro ao buscar dados da empresa:', empresaError)
+      console.error('Erro ao buscar empresa:', empresaError)
       return new Response(
         JSON.stringify({ error: 'Empresa não encontrada' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
@@ -65,11 +65,16 @@ serve(async (req) => {
 
     try {
       // Generate QR code using the Evolution API
-      const qrResponse = await fetch(`${baseUrl}/instance/qr/${empresa.instance_name}`, {
+      // According to Evolution API docs, the endpoint is /instance/qr
+      const qrResponse = await fetch(`${baseUrl}/instance/qr`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'apikey': empresa.apikeyevo
-        }
+        },
+        body: JSON.stringify({
+          instanceName: empresa.instance_name
+        })
       })
 
       if (!qrResponse.ok) {
@@ -84,7 +89,7 @@ serve(async (req) => {
       // Update QR code URL in database
       const { error: updateError } = await supabaseClient
         .from('Empresas')
-        .update({ qr_code_url: qrData.qr })
+        .update({ qr_code_url: qrData.qrcode.base64 }) // Updated to match Evolution API response
         .eq('emailempresa', email)
 
       if (updateError) {
@@ -94,7 +99,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: true,
-          qr: qrData.qr
+          qr: qrData.qrcode.base64 // Updated to match Evolution API response
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
