@@ -15,7 +15,11 @@ serve(async (req) => {
     const { email } = await req.json()
     
     if (!email) {
-      throw new Error('Email não fornecido')
+      console.error('Email não fornecido')
+      return new Response(
+        JSON.stringify({ error: 'Email não fornecido' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      )
     }
 
     // Get Supabase client
@@ -23,7 +27,11 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     
     if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Missing Supabase environment variables')
+      console.error('Missing Supabase environment variables')
+      return new Response(
+        JSON.stringify({ error: 'Configuração do servidor incompleta' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      )
     }
 
     const supabaseClient = createClient(supabaseUrl, supabaseKey)
@@ -44,52 +52,62 @@ serve(async (req) => {
     }
 
     if (!empresa.url_instance || !empresa.apikeyevo || !empresa.instance_name) {
+      console.error('Credenciais da Evolution incompletas')
       return new Response(
         JSON.stringify({ error: 'Credenciais do Evolution não configuradas' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
     }
 
-    // Clean up the URL to ensure it's just the base URL without any trailing paths
-    const baseUrl = empresa.url_instance.split('/message')[0].replace(/\/$/, '')
+    // Clean up the URL and ensure it ends with a slash if needed
+    const baseUrl = empresa.url_instance.split('/message')[0].replace(/\/+$/, '')
     console.log('URL base da instância:', baseUrl)
 
-    // Generate QR code using the provided structure
-    const qrResponse = await fetch(`${baseUrl}/instance/qr/${empresa.instance_name}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': empresa.apikeyevo
-      }
-    })
+    try {
+      // Generate QR code using the Evolution API
+      const qrResponse = await fetch(`${baseUrl}/instance/qr/${empresa.instance_name}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': empresa.apikeyevo
+        }
+      })
 
-    if (!qrResponse.ok) {
-      console.error('Erro na resposta do Evolution:', await qrResponse.text())
+      if (!qrResponse.ok) {
+        const errorText = await qrResponse.text()
+        console.error('Erro na resposta do Evolution:', errorText)
+        throw new Error(`Evolution API returned ${qrResponse.status}: ${errorText}`)
+      }
+
+      const qrData = await qrResponse.json()
+      console.log('QR code gerado com sucesso')
+
+      // Update QR code URL in database
+      const { error: updateError } = await supabaseClient
+        .from('Empresas')
+        .update({ qr_code_url: qrData.qr })
+        .eq('emailempresa', email)
+
+      if (updateError) {
+        console.error('Erro ao atualizar QR code:', updateError)
+      }
+
       return new Response(
-        JSON.stringify({ error: 'Erro ao gerar QR code' }),
+        JSON.stringify({ 
+          success: true,
+          qr: qrData.qr
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+
+    } catch (error) {
+      console.error('Erro ao gerar QR code:', error)
+      return new Response(
+        JSON.stringify({ 
+          error: `Erro ao gerar QR code: ${error.message}` 
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       )
     }
-
-    const qrData = await qrResponse.json()
-    console.log('QR code gerado com sucesso')
-
-    // Update QR code URL in database
-    const { error: updateError } = await supabaseClient
-      .from('Empresas')
-      .update({ qr_code_url: qrData.qr })
-      .eq('emailempresa', email)
-
-    if (updateError) {
-      console.error('Erro ao atualizar QR code:', updateError)
-    }
-
-    return new Response(
-      JSON.stringify({ 
-        success: true,
-        qr: qrData.qr
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
 
   } catch (error) {
     console.error('Erro na função:', error)
