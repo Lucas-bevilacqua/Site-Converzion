@@ -60,10 +60,24 @@ export const WhatsAppStatus = () => {
 
         if (error) {
           console.error('❌ Erro ao verificar status:', error);
-          // Se o erro indicar que precisa de configuração, atualizamos o estado
-          if (error.message.includes('Credenciais do Evolution não configuradas')) {
+          const errorBody = JSON.parse(error.message);
+          
+          // Verifica se o erro indica que precisa de configuração
+          if (errorBody?.error === 'Credenciais do Evolution não configuradas' || 
+              errorBody?.needsSetup === true) {
+            console.log('⚙️ Evolution precisa ser configurado');
             setNeedsSetup(true);
             setIsConnected(false);
+            
+            // Atualiza o status no banco
+            const { error: updateError } = await supabase
+              .from('Empresas')
+              .update({ is_connected: false })
+              .eq('emailempresa', session.user.email);
+
+            if (updateError) {
+              console.error('❌ Erro ao atualizar status no banco:', updateError);
+            }
           }
           return;
         }
