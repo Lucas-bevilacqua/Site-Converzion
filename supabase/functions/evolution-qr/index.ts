@@ -59,13 +59,15 @@ serve(async (req) => {
       )
     }
 
-    // Clean up the URL
+    // Clean up the URL and instance name
     const baseUrl = empresa.url_instance.split('/message')[0].replace(/\/+$/, '')
+    const instanceName = encodeURIComponent(empresa.instance_name.trim())
     console.log('URL base da instância:', baseUrl)
+    console.log('Nome da instância (encoded):', instanceName)
 
     try {
       // Primeiro verifica se a instância existe
-      console.log('Verificando se a instância existe:', empresa.instance_name)
+      console.log('Verificando se a instância existe:', instanceName)
       const statusResponse = await fetch(`${baseUrl}/instance/fetchInstances`, {
         headers: {
           'Content-Type': 'application/json',
@@ -85,7 +87,7 @@ serve(async (req) => {
             'apikey': empresa.apikeyevo
           },
           body: JSON.stringify({
-            instanceName: empresa.instance_name
+            instanceName: empresa.instance_name.trim()
           })
         })
 
@@ -97,8 +99,8 @@ serve(async (req) => {
       }
 
       // Conecta a instância
-      console.log('Conectando instância:', empresa.instance_name)
-      const connectResponse = await fetch(`${baseUrl}/instance/connect/${empresa.instance_name}`, {
+      console.log('Conectando instância:', instanceName)
+      const connectResponse = await fetch(`${baseUrl}/instance/connect/${instanceName}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

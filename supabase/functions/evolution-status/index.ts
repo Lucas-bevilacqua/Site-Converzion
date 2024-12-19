@@ -69,9 +69,12 @@ serve(async (req) => {
       )
     }
 
-    // Clean up the URL
+    // Clean up the URL and instance name
     const baseUrl = empresa.url_instance.split('/message')[0].replace(/\/+$/, '')
+    // Remove espaços e caracteres especiais do nome da instância
+    const instanceName = encodeURIComponent(empresa.instance_name.trim())
     console.log('🌐 URL base da instância:', baseUrl)
+    console.log('📱 Nome da instância (encoded):', instanceName)
 
     try {
       // Primeiro verifica se existem instâncias
@@ -93,8 +96,8 @@ serve(async (req) => {
       }
 
       // Verifica status da conexão
-      console.log('📱 Verificando status da conexão:', empresa.instance_name)
-      const statusResponse = await fetch(`${baseUrl}/instance/connectionState/${empresa.instance_name}`, {
+      console.log('📱 Verificando status da conexão:', instanceName)
+      const statusResponse = await fetch(`${baseUrl}/instance/connectionState/${instanceName}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
