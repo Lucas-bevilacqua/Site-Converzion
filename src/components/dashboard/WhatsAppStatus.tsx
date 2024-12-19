@@ -53,35 +53,42 @@ export const WhatsAppStatus = () => {
       // Primeiro atualiza o estado com o valor do banco
       setIsConnected(empresa.is_connected || false);
 
-      const { data, error } = await supabase.functions.invoke('evolution-status', {
-        body: { email: session.user.email }
-      });
+      try {
+        const { data, error } = await supabase.functions.invoke('evolution-status', {
+          body: { email: session.user.email }
+        });
 
-      if (error) {
-        console.error('❌ Erro ao verificar status:', error);
-        if (error.message.includes('Instância não encontrada')) {
-          setNeedsSetup(true);
+        if (error) {
+          console.error('❌ Erro ao verificar status:', error);
+          // Se o erro indicar que precisa de configuração, atualizamos o estado
+          if (error.message.includes('Credenciais do Evolution não configuradas')) {
+            setNeedsSetup(true);
+            setIsConnected(false);
+          }
+          return;
         }
-        return;
-      }
 
-      console.log('✅ Status da conexão:', data);
-      
-      // Atualiza o estado com o valor mais recente da API
-      setIsConnected(data.isConnected);
-      setNeedsSetup(data.needsSetup || false);
+        console.log('✅ Status da conexão:', data);
+        
+        // Atualiza o estado com o valor mais recente da API
+        setIsConnected(data.isConnected);
+        setNeedsSetup(data.needsSetup || false);
 
-      // Atualiza o status no banco de dados se for diferente
-      if (empresa.is_connected !== data.isConnected) {
-        console.log('🔄 Atualizando status no banco:', data.isConnected);
-        const { error: updateError } = await supabase
-          .from('Empresas')
-          .update({ is_connected: data.isConnected })
-          .eq('emailempresa', session.user.email);
+        // Atualiza o status no banco de dados se for diferente
+        if (empresa.is_connected !== data.isConnected) {
+          console.log('🔄 Atualizando status no banco:', data.isConnected);
+          const { error: updateError } = await supabase
+            .from('Empresas')
+            .update({ is_connected: data.isConnected })
+            .eq('emailempresa', session.user.email);
 
-        if (updateError) {
-          console.error('❌ Erro ao atualizar status no banco:', updateError);
+          if (updateError) {
+            console.error('❌ Erro ao atualizar status no banco:', updateError);
+          }
         }
+      } catch (error) {
+        console.error('❌ Erro ao verificar status na API:', error);
+        // Se houver erro na API, mantemos o status do banco
       }
 
     } catch (error) {
