@@ -19,7 +19,7 @@ export const useAuth = () => {
       });
 
       if (signInError) {
-        console.error('Erro ao fazer login:', signInError);
+        console.log('Erro no login:', signInError);
         
         // Se o erro for de credenciais inválidas, tentar criar conta
         if (signInError.message.includes('Invalid login credentials')) {
@@ -34,27 +34,28 @@ export const useAuth = () => {
           });
 
           if (signUpError) {
-            console.error('Erro ao criar usuário:', signUpError);
+            console.error('Erro ao criar conta:', signUpError);
             toast({
               title: "Erro no Cadastro",
-              description: "Não foi possível criar sua conta. Por favor, tente novamente.",
+              description: signUpError.message,
               variant: "destructive",
             });
             return false;
           }
 
           if (signUpData.user) {
-            console.log('Usuário criado com sucesso:', signUpData);
+            console.log('Conta criada com sucesso:', signUpData);
             toast({
               title: "Conta Criada",
-              description: "Sua conta foi criada com sucesso. Por favor, verifique seu email para confirmar o cadastro.",
+              description: "Sua conta foi criada com sucesso! Por favor, verifique seu email para confirmar o cadastro.",
             });
             return true;
           }
         } else {
+          console.error('Erro não relacionado a credenciais:', signInError);
           toast({
             title: "Erro no Login",
-            description: "Email ou senha incorretos. Por favor, tente novamente.",
+            description: signInError.message,
             variant: "destructive",
           });
           return false;
