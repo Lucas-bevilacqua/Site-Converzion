@@ -22,6 +22,38 @@ export const WhatsAppStatus = ({
 }: WhatsAppStatusProps) => {
   const { toast } = useToast();
 
+  const createInstance = async (baseUrl: string, instanceName: string, apiKey: string) => {
+    console.log('🔄 Tentando criar instância:', instanceName);
+    
+    try {
+      const response = await fetch(`${baseUrl}/instance/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': apiKey
+        },
+        body: JSON.stringify({
+          instanceName: instanceName,
+          qrcode: true,
+          integration: "WHATSAPP-BAILEYS",
+          token: apiKey
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Erro ao criar instância:', errorText);
+        return false;
+      }
+
+      console.log('✅ Instância criada com sucesso');
+      return true;
+    } catch (error) {
+      console.error('❌ Erro ao criar instância:', error);
+      return false;
+    }
+  };
+
   // Poll for connection status every 30 seconds
   useEffect(() => {
     const checkConnectionStatus = async () => {
@@ -58,7 +90,12 @@ export const WhatsAppStatus = ({
           }
         });
 
-        if (!statusResponse.ok) {
+        // If instance doesn't exist, try to create it
+        if (statusResponse.status === 404) {
+          console.log('⚠️ Instância não encontrada, tentando criar...');
+          const created = await createInstance(baseUrl, instanceName, empresa.apikeyevo);
+          if (!created) return;
+        } else if (!statusResponse.ok) {
           console.error('Erro ao verificar status:', await statusResponse.text());
           return;
         }
