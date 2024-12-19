@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { createEmpresa, recreateEmpresa } from "@/services/auth/empresa.service";
 import { signUpUser, signInUser } from "@/services/auth/auth.service";
+import { supabase } from "@/integrations/supabase/client";
 
 export const useAuth = () => {
   const { toast } = useToast();
