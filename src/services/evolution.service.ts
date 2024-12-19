@@ -1,10 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-
-export interface EvolutionCredentials {
-  url_instance: string;
-  instance_name: string;
-  apikeyevo: string;
-}
+import type { EvolutionCredentials } from "./auth/types";
 
 export const getEvolutionCredentials = async (email: string): Promise<EvolutionCredentials | null> => {
   console.log('🔍 Buscando credenciais do Evolution para:', email);

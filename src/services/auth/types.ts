@@ -9,3 +9,9 @@ export interface EmpresaData {
   senha: string;
   NomeEmpresa: string;
 }
+
+export interface EvolutionCredentials {
+  url_instance: string;
+  instance_name: string;
+  apikeyevo: string;
+}
