@@ -91,6 +91,7 @@ export type Database = {
           id: number
           NomeEmpresa: string
           prompt: string | null
+          senha: string
           telefoneempresa: string | null
           url_instance: string | null
         }
@@ -101,6 +102,7 @@ export type Database = {
           id?: number
           NomeEmpresa: string
           prompt?: string | null
+          senha: string
           telefoneempresa?: string | null
           url_instance?: string | null
         }
@@ -111,6 +113,7 @@ export type Database = {
           id?: number
           NomeEmpresa?: string
           prompt?: string | null
+          senha?: string
           telefoneempresa?: string | null
           url_instance?: string | null
         }

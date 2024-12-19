@@ -9,6 +9,7 @@ const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -16,17 +17,17 @@ const Login = () => {
     setLoading(true);
 
     try {
-      console.log('Attempting to sign in with email:', email);
+      console.log('Verificando credenciais para:', email);
       
-      // First, check if the email exists in the Empresas table
+      // Primeiro, verificar se o email e senha correspondem a uma empresa
       const { data: empresa, error: empresaError } = await supabase
         .from('Empresas')
-        .select('emailempresa')
+        .select('emailempresa, senha')
         .eq('emailempresa', email)
         .single();
 
       if (empresaError || !empresa) {
-        console.error('Email not found in Empresas table:', empresaError);
+        console.error('Email não encontrado:', empresaError);
         toast({
           title: "Erro",
           description: "Email não encontrado no sistema",
@@ -35,30 +36,40 @@ const Login = () => {
         return;
       }
 
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: window.location.origin,
-        },
-      });
-
-      if (error) {
-        console.error('Error sending magic link:', error);
+      if (empresa.senha !== senha) {
+        console.error('Senha incorreta');
         toast({
           title: "Erro",
-          description: "Erro ao enviar o link de acesso",
+          description: "Senha incorreta",
           variant: "destructive",
         });
         return;
       }
 
-      console.log('Magic link sent successfully');
+      // Se as credenciais estiverem corretas, criar uma sessão
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password: senha,
+      });
+
+      if (authError) {
+        console.error('Erro ao fazer login:', authError);
+        toast({
+          title: "Erro",
+          description: "Erro ao fazer login",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Login realizado com sucesso');
       toast({
         title: "Sucesso",
-        description: "Link de acesso enviado para seu email",
+        description: "Login realizado com sucesso",
       });
+      navigate("/dashboard");
     } catch (error) {
-      console.error('Unexpected error during login:', error);
+      console.error('Erro inesperado durante login:', error);
       toast({
         title: "Erro",
         description: "Ocorreu um erro inesperado",
@@ -75,7 +86,7 @@ const Login = () => {
         <div className="text-center">
           <h2 className="text-2xl font-bold">Login</h2>
           <p className="text-muted-foreground mt-2">
-            Entre com seu email para receber o link de acesso
+            Entre com suas credenciais para acessar
           </p>
         </div>
 
@@ -90,12 +101,22 @@ const Login = () => {
             />
           </div>
 
+          <div>
+            <Input
+              type="password"
+              placeholder="Sua senha"
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
+              required
+            />
+          </div>
+
           <Button
             type="submit"
             className="w-full"
             disabled={loading}
           >
-            {loading ? "Enviando..." : "Enviar link de acesso"}
+            {loading ? "Entrando..." : "Entrar"}
           </Button>
         </form>
       </div>
