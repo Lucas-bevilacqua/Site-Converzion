@@ -15,6 +15,7 @@ interface AIAgentConfigProps {
   empresaId?: number;
   difyApiKey?: string;
   difyEndpoint?: string;
+  isAdmin?: boolean;
 }
 
 const AIAgentConfig = ({ 
@@ -24,7 +25,8 @@ const AIAgentConfig = ({
   onSavePrompt, 
   empresaId,
   difyApiKey = "",
-  difyEndpoint = ""
+  difyEndpoint = "",
+  isAdmin = false
 }: AIAgentConfigProps) => {
   const { toast } = useToast();
   const [apiKey, setApiKey] = useState(difyApiKey);
@@ -69,15 +71,17 @@ const AIAgentConfig = ({
 
   return (
     <div className="space-y-6">
-      <DifyConfig
-        apiKey={apiKey}
-        endpoint={endpoint}
-        loading={loading}
-        onApiKeyChange={setApiKey}
-        onEndpointChange={setEndpoint}
-        onSaveConfig={onSavePrompt}
-        empresaId={empresaId}
-      />
+      {isAdmin && (
+        <DifyConfig
+          apiKey={apiKey}
+          endpoint={endpoint}
+          loading={loading}
+          onApiKeyChange={setApiKey}
+          onEndpointChange={setEndpoint}
+          onSaveConfig={onSavePrompt}
+          empresaId={empresaId}
+        />
+      )}
 
       <Card className="p-6 space-y-4">
         <h2 className="text-xl font-semibold text-foreground">Configuração do Prompt</h2>

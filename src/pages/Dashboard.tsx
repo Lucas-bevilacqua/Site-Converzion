@@ -17,6 +17,7 @@ const Dashboard = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [isGeneratingQR, setIsGeneratingQR] = useState(false);
   const [telefoneempresa, setTelefoneempresa] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -30,7 +31,7 @@ const Dashboard = () => {
       
       const { data: empresa, error } = await supabase
         .from('Empresas')
-        .select('id, prompt, qr_code_url, is_connected, telefoneempresa')
+        .select('id, prompt, qr_code_url, is_connected, telefoneempresa, is_admin')
         .eq('emailempresa', session.user.email)
         .single();
 
@@ -48,13 +49,15 @@ const Dashboard = () => {
         console.log('Empresa data loaded:', { 
           id: empresa.id, 
           hasPrompt: !!empresa.prompt, 
-          hasQR: !!empresa.qr_code_url 
+          hasQR: !!empresa.qr_code_url,
+          isAdmin: empresa.is_admin
         });
         setEmpresaId(empresa.id);
         setPrompt(empresa.prompt || "");
         setQrCodeUrl(empresa.qr_code_url);
         setIsConnected(empresa.is_connected || false);
         setTelefoneempresa(empresa.telefoneempresa);
+        setIsAdmin(empresa.is_admin || false);
       }
     };
 
@@ -150,11 +153,6 @@ const Dashboard = () => {
     });
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate('/');
-  };
-
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
@@ -176,6 +174,8 @@ const Dashboard = () => {
               loading={loading}
               onPromptChange={setPrompt}
               onSavePrompt={handleSavePrompt}
+              empresaId={empresaId}
+              isAdmin={isAdmin}
             />
           </div>
         </main>
