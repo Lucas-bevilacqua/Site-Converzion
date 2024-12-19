@@ -10,8 +10,10 @@ export const LoginForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Iniciando submissão do formulário...');
     const success = await handleEmailSignIn(email, senha, 1); // TODO: Get empresa_id dynamically
     if (success) {
+      console.log('Redirecionando para dashboard após login bem-sucedido');
       window.location.href = "/dashboard";
     }
   };
@@ -25,6 +27,7 @@ export const LoginForm = () => {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
+          className="w-full"
         />
       </div>
 
@@ -35,6 +38,7 @@ export const LoginForm = () => {
           value={senha}
           onChange={(e) => setSenha(e.target.value)}
           required
+          className="w-full"
         />
       </div>
 

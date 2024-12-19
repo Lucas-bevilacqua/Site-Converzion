@@ -21,60 +21,62 @@ export const useAuth = () => {
       if (signInError) {
         console.error('Erro ao fazer login:', signInError);
         
-        // If error is about unconfirmed email, try to resend confirmation
-        if (signInError.message.includes('Email not confirmed')) {
-          console.log('Email não confirmado, tentando reenviar confirmação...');
-          const { error: resendError } = await supabase.auth.resend({
-            type: 'signup',
-            email: email,
+        // If error is about invalid credentials, try to sign up
+        if (signInError.message.includes('Invalid login credentials')) {
+          console.log('Credenciais inválidas, tentando criar conta...');
+          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+            email,
+            password: senha,
+            options: {
+              data: { empresa_id },
+              emailRedirectTo: `${window.location.origin}/login`
+            }
           });
 
-          if (resendError) {
-            console.error('Erro ao reenviar email de confirmação:', resendError);
-          } else {
-            console.log('Email de confirmação reenviado');
+          if (signUpError) {
+            console.error('Erro ao criar usuário:', signUpError);
+            toast({
+              title: "Erro no Cadastro",
+              description: "Não foi possível criar sua conta. Por favor, tente novamente.",
+              variant: "destructive",
+            });
+            return false;
           }
 
-          toast({
-            title: "Email não Confirmado",
-            description: "Por favor confirme seu email antes de fazer login. Um novo email de confirmação foi enviado. Verifique sua caixa de entrada e spam.",
-            variant: "destructive",
-          });
-          return false;
-        }
+          if (signUpData.user) {
+            console.log('Usuário criado com sucesso:', signUpData);
+            toast({
+              title: "Conta Criada",
+              description: "Sua conta foi criada com sucesso. Você já pode fazer login.",
+            });
+            
+            // Try to sign in immediately after signup
+            const { data: immediateSignIn, error: immediateSignInError } = await supabase.auth.signInWithPassword({
+              email,
+              password: senha,
+            });
 
-        // If it's not an unconfirmed email error, try to sign up
-        console.log('Usuário não encontrado, tentando criar conta...');
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email,
-          password: senha,
-          options: {
-            data: { empresa_id },
-            emailRedirectTo: `${window.location.origin}/login`
+            if (immediateSignInError) {
+              console.error('Erro ao fazer login após criar conta:', immediateSignInError);
+              return false;
+            }
+
+            if (immediateSignIn.user) {
+              console.log('Login realizado com sucesso após criar conta:', immediateSignIn);
+              return true;
+            }
           }
-        });
-
-        if (signUpError) {
-          console.error('Erro ao criar usuário:', signUpError);
+        } else {
           toast({
-            title: "Erro no Cadastro",
-            description: "Não foi possível criar sua conta. Por favor, tente novamente.",
+            title: "Erro no Login",
+            description: signInError.message,
             variant: "destructive",
-          });
-          return false;
-        }
-
-        if (signUpData.user) {
-          console.log('Usuário criado com sucesso:', signUpData);
-          toast({
-            title: "Verifique seu Email",
-            description: "Um email de confirmação foi enviado para " + email + ". Por favor, verifique também sua pasta de spam.",
           });
           return false;
         }
       }
 
-      if (signInData.user) {
+      if (signInData?.user) {
         console.log('Login realizado com sucesso:', signInData);
         toast({
           title: "Sucesso",
