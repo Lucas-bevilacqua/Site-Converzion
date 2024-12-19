@@ -37,7 +37,7 @@ const Login = () => {
         return;
       }
 
-      console.log('Empresa encontrada, verificando senha');
+      console.log('Empresa encontrada:', empresa);
 
       if (empresa.senha !== senha) {
         console.error('Senha incorreta para o email:', email);
@@ -50,19 +50,22 @@ const Login = () => {
         return;
       }
 
-      // Verificar se o usuário já existe no Auth
-      console.log('Verificando se usuário existe no Auth');
-      const { data: { user }, error: getUserError } = await supabase.auth.getUser();
-      
-      if (!user) {
-        // Se o usuário não existe no Auth, criar
-        console.log('Usuário não existe no Auth, criando...');
+      // Tentar fazer login primeiro
+      console.log('Tentando fazer login direto');
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password: senha,
+      });
+
+      // Se o login falhar, criar o usuário
+      if (signInError) {
+        console.log('Login falhou, tentando criar usuário:', signInError);
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password: senha,
           options: {
             data: {
-              empresa_id: empresa.NomeEmpresa // Usando NomeEmpresa em vez de id
+              empresa_id: empresa.id
             }
           }
         });
@@ -80,26 +83,25 @@ const Login = () => {
         
         console.log('Usuário criado com sucesso:', signUpData);
         
-        // Adicionar um pequeno delay antes de tentar fazer login
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
+        // Adicionar um delay maior antes de tentar fazer login
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Fazer login
-      console.log('Tentando fazer login com Auth');
-      const { error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password: senha,
-      });
-
-      if (authError) {
-        console.error('Erro ao fazer login:', authError);
-        toast({
-          title: "Erro",
-          description: "Erro ao fazer login: " + authError.message,
-          variant: "destructive",
+        // Tentar fazer login novamente após criar o usuário
+        const { error: finalLoginError } = await supabase.auth.signInWithPassword({
+          email,
+          password: senha,
         });
-        setLoading(false);
-        return;
+
+        if (finalLoginError) {
+          console.error('Erro no login final:', finalLoginError);
+          toast({
+            title: "Erro",
+            description: "Erro ao fazer login após criar usuário: " + finalLoginError.message,
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
       }
 
       console.log('Login realizado com sucesso');
