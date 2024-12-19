@@ -11,7 +11,7 @@ export const useAuth = () => {
     console.log('Iniciando processo de autenticação para:', email);
 
     try {
-      // Primeiro verifica se existe uma empresa com esse email
+      // Primeiro, verifica se já existe uma conta com este email
       console.log('Verificando se empresa existe...');
       const { data: empresaData, error: empresaError } = await supabase
         .from('Empresas')
@@ -19,97 +19,88 @@ export const useAuth = () => {
         .eq('emailempresa', email)
         .single();
 
-      if (empresaError) {
-        console.log('Erro ao verificar empresa:', empresaError);
-        if (empresaError.code === 'PGRST116') {
-          console.log('Empresa não encontrada, tentando criar conta...');
-          // Se não existe, tenta criar uma nova conta
-          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-            email,
-            password: senha,
-            options: {
-              data: { empresa_id },
-              emailRedirectTo: window.location.origin + '/login'
-            }
-          });
-
-          if (signUpError) {
-            console.error('Erro ao criar conta:', signUpError);
-            toast({
-              title: "Erro no Cadastro",
-              description: signUpError.message,
-              variant: "destructive",
-            });
-            return false;
+      if (empresaError && empresaError.code === 'PGRST116') {
+        // Empresa não existe, vamos criar uma nova conta
+        console.log('Empresa não encontrada, criando nova conta...');
+        
+        // 1. Primeiro criamos o usuário no auth
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password: senha,
+          options: {
+            data: { empresa_id },
+            emailRedirectTo: window.location.origin + '/login'
           }
+        });
 
-          // Cria o registro na tabela Empresas
+        if (signUpError) {
+          console.error('Erro ao criar usuário:', signUpError);
+          toast({
+            title: "Erro no Cadastro",
+            description: "Não foi possível criar sua conta. Por favor, tente novamente.",
+            variant: "destructive",
+          });
+          return false;
+        }
+
+        // 2. Se o usuário foi criado com sucesso, criamos o registro na tabela Empresas
+        if (signUpData.user) {
           const { error: createEmpresaError } = await supabase
             .from('Empresas')
             .insert([
               { 
                 emailempresa: email,
                 senha: senha,
-                NomeEmpresa: 'Nova Empresa' // Nome temporário
+                NomeEmpresa: 'Nova Empresa',
+                id: empresa_id
               }
             ]);
 
           if (createEmpresaError) {
-            console.error('Erro ao criar empresa:', createEmpresaError);
+            console.error('Erro ao criar registro da empresa:', createEmpresaError);
+            // Se falhar ao criar a empresa, removemos o usuário criado
+            await supabase.auth.admin.deleteUser(signUpData.user.id);
             toast({
               title: "Erro ao Criar Empresa",
-              description: "Não foi possível criar o registro da empresa.",
+              description: "Ocorreu um erro ao criar sua empresa. Por favor, tente novamente.",
               variant: "destructive",
             });
             return false;
           }
 
-          if (signUpData?.user) {
-            console.log('Conta criada com sucesso:', signUpData);
-            toast({
-              title: "Conta Criada",
-              description: "Sua conta foi criada com sucesso! Você será redirecionado para o dashboard.",
-            });
-            return true;
-          }
+          toast({
+            title: "Conta Criada",
+            description: "Sua conta foi criada com sucesso! Você receberá um email de confirmação.",
+          });
+          return true;
         }
-        return false;
-      }
-
-      // Se a empresa existe, tenta fazer login
-      console.log('Empresa encontrada, tentando fazer login...');
-      if (empresaData.senha !== senha) {
-        console.log('Senha incorreta');
-        toast({
-          title: "Erro no Login",
-          description: "Senha incorreta. Por favor, tente novamente.",
-          variant: "destructive",
+      } else if (empresaData) {
+        // Empresa existe, tentamos fazer login
+        console.log('Empresa encontrada, tentando login...');
+        
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password: senha,
         });
-        return false;
-      }
 
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password: senha,
-      });
+        if (signInError) {
+          console.error('Erro no login:', signInError);
+          toast({
+            title: "Erro no Login",
+            description: "Email ou senha incorretos. Por favor, tente novamente.",
+            variant: "destructive",
+          });
+          return false;
+        }
 
-      if (signInError) {
-        console.error('Erro no login:', signInError);
-        toast({
-          title: "Erro no Login",
-          description: "Ocorreu um erro ao fazer login. Por favor, tente novamente.",
-          variant: "destructive",
-        });
-        return false;
-      }
-
-      if (signInData?.user) {
-        console.log('Login bem-sucedido:', signInData);
-        toast({
-          title: "Sucesso",
-          description: "Login realizado com sucesso!",
-        });
-        return true;
+        if (signInData.user) {
+          console.log('Login bem-sucedido:', signInData.user.email);
+          toast({
+            title: "Login Realizado",
+            description: "Bem-vindo de volta!",
+          });
+          return true;
+        }
       }
 
       return false;
