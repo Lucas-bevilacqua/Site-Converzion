@@ -49,7 +49,7 @@ serve(async (req) => {
     console.log('URL base da instância:', baseUrl)
 
     // Check instance status using the provided structure
-    const statusResponse = await fetch(`${baseUrl}/instance/connectionState/instance1`, {
+    const statusResponse = await fetch(`${baseUrl}/instance/connectionState/Lucas O`, {
       headers: {
         'Content-Type': 'application/json',
         'apikey': empresa.apikeyevo
