@@ -8,13 +8,28 @@ interface WhatsAppStatusProps {
   isGeneratingQR: boolean;
   qrCodeUrl: string | null;
   onGenerateQR: () => void;
+  telefoneempresa: string | null;
 }
 
-const WhatsAppStatus = ({ isConnected, isGeneratingQR, qrCodeUrl, onGenerateQR }: WhatsAppStatusProps) => {
+const WhatsAppStatus = ({ 
+  isConnected, 
+  isGeneratingQR, 
+  qrCodeUrl, 
+  onGenerateQR,
+  telefoneempresa 
+}: WhatsAppStatusProps) => {
   const { toast } = useToast();
 
   const handleGenerateQR = async () => {
     try {
+      if (!telefoneempresa) {
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "É necessário cadastrar um número de telefone para a empresa antes de gerar o QR code"
+        });
+        return;
+      }
       await onGenerateQR();
     } catch (error) {
       toast({
@@ -38,7 +53,7 @@ const WhatsAppStatus = ({ isConnected, isGeneratingQR, qrCodeUrl, onGenerateQR }
         {!isConnected && (
           <Button 
             onClick={handleGenerateQR}
-            disabled={isGeneratingQR}
+            disabled={isGeneratingQR || !telefoneempresa}
             variant="secondary"
             className="bg-[#403E43] hover:bg-[#2D2B30] text-white"
           >
@@ -47,6 +62,12 @@ const WhatsAppStatus = ({ isConnected, isGeneratingQR, qrCodeUrl, onGenerateQR }
           </Button>
         )}
       </div>
+      
+      {!telefoneempresa && !isConnected && (
+        <p className="text-sm text-yellow-400">
+          É necessário cadastrar um número de telefone para a empresa antes de gerar o QR code
+        </p>
+      )}
       
       {!isConnected && qrCodeUrl && (
         <div className="space-y-4">
