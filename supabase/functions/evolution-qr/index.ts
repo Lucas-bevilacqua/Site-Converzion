@@ -58,23 +58,27 @@ serve(async (req) => {
 
     // First check if instance is already connected
     if (empresa.is_connected) {
-      console.log('Checking instance status...')
-      const statusUrl = `${empresa.url_instance}/instance/connectionState`
+      console.log('Checking instance connection state...')
+      const stateUrl = `${empresa.url_instance}/instance/connectionState`
       
       try {
-        const statusResponse = await fetch(statusUrl, {
+        const stateResponse = await fetch(stateUrl, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${empresa.apikeyevo}`
+            'apikey': empresa.apikeyevo
           }
         })
 
-        const statusData = await statusResponse.json()
-        console.log('Status response:', statusData)
+        if (!stateResponse.ok) {
+          throw new Error(`Failed to get connection state: ${stateResponse.statusText}`)
+        }
+
+        const stateData = await stateResponse.json()
+        console.log('Connection state response:', stateData)
         
         // According to Evolution API docs, state can be 'open' or 'connected'
-        if (statusData.state === 'open' || statusData.state === 'connected') {
+        if (stateData.state === 'open' || stateData.state === 'connected') {
           console.log('Instance is already connected')
           return new Response(
             JSON.stringify({ 
@@ -86,58 +90,51 @@ serve(async (req) => {
           )
         }
       } catch (error) {
-        console.log('Error checking status, will try to generate new QR code:', error)
+        console.log('Error checking connection state:', error)
+        // Continue to QR code generation if state check fails
       }
     }
 
     console.log('Making request to Evolution API for new QR code...')
     
-    // Instance is not connected, generate new QR code
-    // According to Evolution API docs, the endpoint is /instance/connect
-    const evolutionUrl = `${empresa.url_instance}/instance/connect`
-    console.log('Evolution API URL:', evolutionUrl)
+    // Generate new QR code using the /instance/connect endpoint
+    const connectUrl = `${empresa.url_instance}/instance/connect`
+    console.log('Evolution API connect URL:', connectUrl)
     
-    const evolutionResponse = await fetch(evolutionUrl, {
+    const connectResponse = await fetch(connectUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${empresa.apikeyevo}`
+        'apikey': empresa.apikeyevo
       }
     })
 
-    // First try to get the response as text
-    const responseText = await evolutionResponse.text()
-    console.log('Raw Evolution API response:', responseText)
-
-    let qrData
-    try {
-      qrData = JSON.parse(responseText)
-    } catch (parseError) {
-      console.error('Failed to parse Evolution API response:', parseError)
+    if (!connectResponse.ok) {
+      console.error('Error response from Evolution API:', await connectResponse.text())
       return new Response(
         JSON.stringify({ 
-          error: 'Resposta inválida da API do Evolution',
-          details: responseText 
+          error: 'Erro ao conectar com o Evolution API',
+          details: connectResponse.statusText 
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       )
     }
 
-    // According to Evolution API docs, the QR code is in the 'code' field
-    if (!evolutionResponse.ok || !qrData.code) {
-      console.error('Error or missing QR code in Evolution API response:', qrData)
+    const qrData = await connectResponse.json()
+    console.log('QR code generation response:', qrData)
+
+    if (!qrData.code) {
+      console.error('Missing QR code in Evolution API response:', qrData)
       return new Response(
         JSON.stringify({ 
-          error: 'Erro ao gerar QR code no Evolution',
+          error: 'QR code não encontrado na resposta',
           details: qrData 
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       )
     }
 
-    console.log('Successfully received QR code from Evolution')
-
-    // Update empresa with QR code
+    // Update empresa with QR code and set connection status to false
     const { error: updateError } = await supabaseClient
       .from('Empresas')
       .update({ 
@@ -154,10 +151,14 @@ serve(async (req) => {
       )
     }
 
-    console.log('Successfully updated empresa with QR code')
+    console.log('Successfully generated and saved QR code')
     
     return new Response(
-      JSON.stringify({ success: true, qr_code: qrData.code }),
+      JSON.stringify({ 
+        success: true, 
+        qr_code: qrData.code,
+        message: 'QR code gerado com sucesso'
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
