@@ -33,7 +33,7 @@ export const WhatsAppStatus = () => {
         .maybeSingle();
 
       if (empresaError) {
-        console.error('Erro ao buscar dados da empresa:', empresaError);
+        console.error('❌ Erro ao buscar dados da empresa:', empresaError);
         return;
       }
 
@@ -64,8 +64,16 @@ export const WhatsAppStatus = () => {
 
         updateConnectionStatus(data, session.user.email);
 
-      } catch (error) {
+      } catch (error: any) {
         console.error('❌ Erro ao verificar status na API:', error);
+        if (error.message?.includes('404') || error.status === 404) {
+          setNeedsSetup(true);
+          setIsConnected(false);
+          await supabase
+            .from('Empresas')
+            .update({ is_connected: false })
+            .eq('emailempresa', session.user.email);
+        }
       }
 
     } catch (error) {
@@ -80,10 +88,16 @@ export const WhatsAppStatus = () => {
 
   const handleStatusError = async (error: any, email: string) => {
     try {
-      const errorBody = JSON.parse(error.body || '{}');
+      let errorBody;
+      if (typeof error.body === 'string') {
+        errorBody = JSON.parse(error.body);
+      } else {
+        errorBody = error.body;
+      }
       
-      if (errorBody?.error === 'Credenciais do Evolution não configuradas' || 
-          errorBody?.needsSetup === true) {
+      if (errorBody?.error?.includes('404') || 
+          errorBody?.needsSetup === true || 
+          errorBody?.error === 'Credenciais do Evolution não configuradas') {
         console.log('⚙️ Evolution precisa ser configurado');
         setNeedsSetup(true);
         setIsConnected(false);
