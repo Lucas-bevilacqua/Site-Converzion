@@ -2,6 +2,8 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+const DEFAULT_PASSWORD = "cliente123"; // Senha padrão para novos usuários
+
 export const useAuth = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -43,11 +45,11 @@ export const useAuth = () => {
         return true;
       }
 
-      // Se não existe, cria uma nova conta
-      console.log('Empresa não encontrada, criando nova conta');
+      // Se não existe, cria uma nova conta com a senha padrão
+      console.log('Empresa não encontrada, criando nova conta com senha padrão');
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
-        password: senha,
+        password: DEFAULT_PASSWORD, // Usando a senha padrão para novos usuários
       });
 
       if (signUpError) {
@@ -67,7 +69,7 @@ export const useAuth = () => {
           {
             id: empresa_id,
             emailempresa: email,
-            senha: senha,
+            senha: DEFAULT_PASSWORD, // Salvando a senha padrão no registro da empresa
             NomeEmpresa: 'Nova Empresa'
           }
         ]);
@@ -89,7 +91,7 @@ export const useAuth = () => {
       console.log('Conta e empresa criadas com sucesso!');
       toast({
         title: "Conta Criada",
-        description: "Sua conta foi criada com sucesso!",
+        description: `Sua conta foi criada com sucesso! Sua senha padrão é: ${DEFAULT_PASSWORD}`,
       });
       return true;
 

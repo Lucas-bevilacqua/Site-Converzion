@@ -47,6 +47,7 @@ export type Database = {
           apikeyevo: string | null
           emailempresa: string | null
           id: number
+          is_admin: boolean | null
           is_connected: boolean | null
           NomeEmpresa: string
           prompt: string | null
@@ -60,6 +61,7 @@ export type Database = {
           apikeyevo?: string | null
           emailempresa?: string | null
           id?: number
+          is_admin?: boolean | null
           is_connected?: boolean | null
           NomeEmpresa: string
           prompt?: string | null
@@ -73,6 +75,7 @@ export type Database = {
           apikeyevo?: string | null
           emailempresa?: string | null
           id?: number
+          is_admin?: boolean | null
           is_connected?: boolean | null
           NomeEmpresa?: string
           prompt?: string | null
