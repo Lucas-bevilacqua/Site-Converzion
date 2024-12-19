@@ -6,15 +6,15 @@ import { Loader2, QrCode, Settings } from "lucide-react";
 import { QRCodeDialog } from "./QRCodeDialog";
 import { ConnectionIndicator } from "./ConnectionIndicator";
 import { useNavigate } from "react-router-dom";
+import { useEvolution } from "@/hooks/useEvolution";
 
 export const WhatsAppStatus = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [qrCode, setQrCode] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
   const [needsSetup, setNeedsSetup] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { isLoading, qrCode, handleConnect } = useEvolution();
 
   const checkConnectionStatus = async () => {
     try {
@@ -49,10 +49,6 @@ export const WhatsAppStatus = () => {
         return;
       }
 
-      console.log('📱 Instance name:', empresa.instance_name);
-      console.log('🔗 URL da instância:', empresa.url_instance);
-      console.log('🔌 Status atual:', empresa.is_connected ? 'Conectado' : 'Desconectado');
-
       setIsConnected(empresa.is_connected || false);
 
       try {
@@ -62,46 +58,12 @@ export const WhatsAppStatus = () => {
 
         if (error) {
           console.error('❌ Erro ao verificar status:', error);
-          
-          try {
-            const errorBody = JSON.parse(error.body || '{}');
-            
-            if (errorBody?.error === 'Credenciais do Evolution não configuradas' || 
-                errorBody?.needsSetup === true) {
-              console.log('⚙️ Evolution precisa ser configurado');
-              setNeedsSetup(true);
-              setIsConnected(false);
-              
-              const { error: updateError } = await supabase
-                .from('Empresas')
-                .update({ is_connected: false })
-                .eq('emailempresa', session.user.email);
-
-              if (updateError) {
-                console.error('❌ Erro ao atualizar status no banco:', updateError);
-              }
-            }
-          } catch (parseError) {
-            console.error('❌ Erro ao parsear resposta do erro:', parseError);
-          }
+          handleStatusError(error, session.user.email);
           return;
         }
 
-        console.log('✅ Status da conexão:', data);
-        setIsConnected(data.isConnected);
-        setNeedsSetup(data.needsSetup || false);
+        updateConnectionStatus(data, session.user.email);
 
-        if (empresa.is_connected !== data.isConnected) {
-          console.log('🔄 Atualizando status no banco:', data.isConnected);
-          const { error: updateError } = await supabase
-            .from('Empresas')
-            .update({ is_connected: data.isConnected })
-            .eq('emailempresa', session.user.email);
-
-          if (updateError) {
-            console.error('❌ Erro ao atualizar status no banco:', updateError);
-          }
-        }
       } catch (error) {
         console.error('❌ Erro ao verificar status na API:', error);
       }
@@ -116,79 +78,59 @@ export const WhatsAppStatus = () => {
     }
   };
 
+  const handleStatusError = async (error: any, email: string) => {
+    try {
+      const errorBody = JSON.parse(error.body || '{}');
+      
+      if (errorBody?.error === 'Credenciais do Evolution não configuradas' || 
+          errorBody?.needsSetup === true) {
+        console.log('⚙️ Evolution precisa ser configurado');
+        setNeedsSetup(true);
+        setIsConnected(false);
+        
+        await supabase
+          .from('Empresas')
+          .update({ is_connected: false })
+          .eq('emailempresa', email);
+      }
+    } catch (parseError) {
+      console.error('❌ Erro ao parsear resposta do erro:', parseError);
+    }
+  };
+
+  const updateConnectionStatus = async (data: any, email: string) => {
+    console.log('✅ Status da conexão:', data);
+    setIsConnected(data.isConnected);
+    setNeedsSetup(data.needsSetup || false);
+
+    if (data.isConnected !== isConnected) {
+      console.log('🔄 Atualizando status no banco:', data.isConnected);
+      const { error: updateError } = await supabase
+        .from('Empresas')
+        .update({ is_connected: data.isConnected })
+        .eq('emailempresa', email);
+
+      if (updateError) {
+        console.error('❌ Erro ao atualizar status no banco:', updateError);
+      }
+    }
+  };
+
   useEffect(() => {
     checkConnectionStatus();
     const interval = setInterval(checkConnectionStatus, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  const handleConnect = async () => {
+  const onConnect = async () => {
     if (needsSetup) {
       navigate('/dashboard/settings');
       return;
     }
 
-    try {
-      setIsLoading(true);
-      console.log('🔄 Iniciando processo de conexão...');
-      
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user?.email) {
-        console.log('❌ Usuário não autenticado');
-        toast({
-          variant: "destructive",
-          title: "Erro",
-          description: "Usuário não autenticado"
-        });
-        return;
-      }
-
-      const { data: empresa, error: empresaError } = await supabase
-        .from('Empresas')
-        .select('url_instance, instance_name, apikeyevo')
-        .eq('emailempresa', session.user.email)
-        .single();
-
-      if (empresaError || !empresa?.url_instance || !empresa?.apikeyevo || !empresa?.instance_name) {
-        console.error('Erro ao buscar dados da empresa:', empresaError);
-        toast({
-          variant: "destructive",
-          title: "Erro",
-          description: "Credenciais da Evolution não configuradas. Configure as credenciais nas configurações."
-        });
-        return;
-      }
-
-      console.log('📱 Instance name:', empresa.instance_name);
-      console.log('🔗 URL da instância:', empresa.url_instance);
-
-      const { data: qrData, error } = await supabase.functions.invoke('evolution-qr', {
-        body: { email: session.user.email }
-      });
-
-      if (error) {
-        console.error('❌ Erro ao gerar QR code:', error);
-        toast({
-          variant: "destructive",
-          title: "Erro",
-          description: error.message || "Não foi possível gerar o QR code. Tente novamente."
-        });
-        return;
-      }
-
-      console.log('✅ QR code gerado com sucesso');
-      setQrCode(qrData.qr);
+    const newQrCode = await handleConnect();
+    if (newQrCode) {
       setShowQRCode(true);
-
-    } catch (error) {
-      console.error('❌ Erro ao conectar:', error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Ocorreu um erro ao tentar conectar. Tente novamente."
-      });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -197,7 +139,7 @@ export const WhatsAppStatus = () => {
       <div className="flex items-center gap-4">
         <ConnectionIndicator isConnected={isConnected} needsSetup={needsSetup} />
         <Button
-          onClick={handleConnect}
+          onClick={onConnect}
           disabled={isLoading}
           variant={isConnected ? "outline" : "default"}
         >
