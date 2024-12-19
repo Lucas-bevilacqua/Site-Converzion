@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,15 +14,24 @@ serve(async (req) => {
     const { instance_url } = await req.json()
     
     if (!instance_url) {
-      throw new Error('URL da instância não fornecida')
+      console.error('URL da instância não fornecida')
+      return new Response(
+        JSON.stringify({ error: 'URL da instância não fornecida' }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
     }
 
-    console.log('🔄 Verificando estado da conexão...')
-    const stateResponse = await fetch(`${instance_url}/instance/connectionState`, {
+    // Remove trailing slash if present
+    const baseUrl = instance_url.replace(/\/$/, '')
+    console.log('🔄 Verificando estado da conexão em:', baseUrl)
+
+    const stateResponse = await fetch(`${baseUrl}/instance/connectionState`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': 'SUA_EVOLUTION_API_KEY', // Substitua pela sua chave API se necessário
       },
     })
 
@@ -38,11 +46,10 @@ serve(async (req) => {
     }
 
     console.log('🔄 Iniciando nova conexão...')
-    const connectResponse = await fetch(`${instance_url}/instance/connect`, {
+    const connectResponse = await fetch(`${baseUrl}/instance/connect`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': 'SUA_EVOLUTION_API_KEY', // Substitua pela sua chave API se necessário
       },
       body: JSON.stringify({
         instanceName: "instance1",

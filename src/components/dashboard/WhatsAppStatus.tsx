@@ -34,8 +34,30 @@ export const WhatsAppStatus = ({
 
       console.log('Iniciando geração do QR code...');
       
+      // First get the empresa data to get the instance URL
+      const { data: empresa, error: empresaError } = await supabase
+        .from('Empresas')
+        .select('url_instance')
+        .eq('id', 8) // TODO: Use dynamic empresa ID
+        .single();
+
+      if (empresaError || !empresa?.url_instance) {
+        console.error('Erro ao buscar URL da instância:', empresaError);
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "URL da instância não configurada. Configure a URL da instância nas configurações."
+        });
+        return;
+      }
+
+      console.log('URL da instância:', empresa.url_instance);
+      
       const { data, error } = await supabase.functions.invoke('evolution-qr', {
-        body: { empresa_id: 8 } // TODO: Passar o ID correto da empresa
+        body: { 
+          empresa_id: 8, // TODO: Use dynamic empresa ID
+          instance_url: empresa.url_instance
+        }
       });
 
       if (error) {
