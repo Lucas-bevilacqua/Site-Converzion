@@ -13,16 +13,11 @@ export const recreateEmpresa = async (email: string, senha: string) => {
   }
 
   // Verifica se já existe empresa para este email
-  const { data: existingEmpresa, error: queryError } = await supabase
+  const { data: existingEmpresa } = await supabase
     .from('Empresas')
     .select()
     .eq('emailempresa', email)
-    .maybeSingle();
-
-  if (queryError) {
-    console.error('❌ Erro ao verificar empresa:', queryError);
-    return;
-  }
+    .single();
 
   if (existingEmpresa) {
     console.log('✅ Empresa já existe, não precisa recriar');
@@ -55,9 +50,9 @@ export const createEmpresa = async (empresaData: EmpresaData) => {
     .from('Empresas')
     .select()
     .eq('emailempresa', empresaData.emailempresa)
-    .maybeSingle();
+    .single();
 
-  if (checkError) {
+  if (checkError && checkError.code !== 'PGRST116') {
     console.error('❌ Erro ao verificar empresa:', checkError);
     return { error: checkError };
   }
