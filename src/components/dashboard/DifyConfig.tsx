@@ -40,16 +40,18 @@ const DifyConfig = ({
 
     setSaving(true);
     try {
+      console.log('Atualizando configurações do Dify para empresa:', empresaId);
       const { error } = await supabase
-        .from('empresas')
+        .from('Empresas')
         .update({
-          dify_api_key: apiKey,
+          'API Dify': apiKey,
           dify_endpoint: endpoint
         })
         .eq('id', empresaId);
 
       if (error) throw error;
 
+      console.log('Configurações do Dify atualizadas com sucesso');
       toast({
         title: "Sucesso",
         description: "Configurações do Dify atualizadas com sucesso!",
