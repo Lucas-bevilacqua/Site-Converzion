@@ -53,11 +53,12 @@ serve(async (req) => {
       )
     }
 
-    console.log('Making request to Evolution API...')
-    console.log('Evolution API URL:', empresa.url_instance)
+    // Remove any trailing slashes from the URL
+    const baseUrl = empresa.url_instance.replace(/\/+$/, '')
+    console.log('Evolution API Base URL:', baseUrl)
 
-    // Primeiro verificar o estado da conexão
-    const stateUrl = `${empresa.url_instance}/instance/connectionState`
+    // First check the connection state
+    const stateUrl = `${baseUrl}/instance/connectionState`
     console.log('Checking connection state at:', stateUrl)
     
     try {
@@ -94,8 +95,8 @@ serve(async (req) => {
       // Continue to QR code generation if state check fails
     }
 
-    // Gerar novo QR code
-    const connectUrl = `${empresa.url_instance}/instance/connect`
+    // Generate new QR code using the correct endpoint
+    const connectUrl = `${baseUrl}/instance/connect`
     console.log('Requesting QR code at:', connectUrl)
     
     const connectResponse = await fetch(connectUrl, {
@@ -133,7 +134,7 @@ serve(async (req) => {
       )
     }
 
-    // Atualizar empresa com o QR code
+    // Update empresa with the QR code
     const { error: updateError } = await supabaseClient
       .from('Empresas')
       .update({ 
