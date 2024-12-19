@@ -12,23 +12,7 @@ export const useAuth = () => {
     console.log('📧 Email:', email);
 
     try {
-      // Primeiro, tenta fazer login diretamente
-      console.log('🔑 Tentando login direto com as credenciais fornecidas');
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password: senha,
-      });
-
-      if (!signInError) {
-        console.log('✅ Login bem-sucedido!');
-        toast({
-          title: "Login Realizado",
-          description: "Bem-vindo de volta!",
-        });
-        return true;
-      }
-
-      // Se o login falhou, verifica se a empresa existe
+      // Primeiro, verifica se a empresa existe
       console.log('🔍 Verificando se a empresa existe');
       const { data: empresaExistente } = await supabase
         .from('Empresas')
@@ -37,20 +21,36 @@ export const useAuth = () => {
         .single();
 
       if (empresaExistente) {
-        console.log('❌ Empresa existe mas login falhou. Senha incorreta.');
-        toast({
-          title: "Erro no Login",
-          description: "Use a senha: default123",
-          variant: "destructive",
+        // Se a empresa existe, tenta fazer login
+        console.log('🏢 Empresa encontrada, tentando login');
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password: "default123", // Sempre usa a senha padrão para login
         });
-        return false;
+
+        if (signInError) {
+          console.log('❌ Login falhou');
+          toast({
+            title: "Erro no Login",
+            description: "Use a senha: default123",
+            variant: "destructive",
+          });
+          return false;
+        }
+
+        console.log('✅ Login bem-sucedido!');
+        toast({
+          title: "Login Realizado",
+          description: "Bem-vindo de volta!",
+        });
+        return true;
       }
 
       // Se não existe, cria uma nova conta
       console.log('📝 Criando nova conta e empresa');
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
-        password: senha,
+        password: "default123",
         options: {
           data: {
             empresa_id: empresa_id,
@@ -75,7 +75,7 @@ export const useAuth = () => {
           {
             id: empresa_id,
             emailempresa: email,
-            senha: senha,
+            senha: "default123",
             NomeEmpresa: 'Nova Empresa'
           }
         ]);
