@@ -31,7 +31,7 @@ export default function Chat() {
           setEmpresaId(empresa.id);
           setPrompt(empresa.prompt || "");
           setDifyApiKey(empresa["API Dify"] || "");
-          setDifyEndpoint(empresa.dify_endpoint || "");
+          setDifyEndpoint(empresa.url_instance || ""); // Changed from dify_endpoint to url_instance
           setIsAdmin(empresa.is_admin || false);
         }
       } catch (error) {
