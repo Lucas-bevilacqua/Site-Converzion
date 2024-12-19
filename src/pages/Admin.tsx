@@ -140,9 +140,9 @@ const Admin = () => {
               name="telefoneempresa"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email da Empresa</FormLabel>
+                  <FormLabel>Telefone da Empresa</FormLabel>
                   <FormControl>
-                    <Input type="email" {...field} />
+                    <Input type="tel" placeholder="Ex: 11999999999" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
