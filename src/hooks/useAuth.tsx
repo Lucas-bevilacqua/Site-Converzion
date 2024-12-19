@@ -11,19 +11,19 @@ export const useAuth = () => {
     console.log('Iniciando processo de autenticação para:', email);
 
     try {
-      // Primeiro tenta fazer login
-      console.log('Tentando fazer login...');
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password: senha,
-      });
+      // Primeiro verifica se existe uma empresa com esse email
+      console.log('Verificando se empresa existe...');
+      const { data: empresaData, error: empresaError } = await supabase
+        .from('Empresas')
+        .select('*')
+        .eq('emailempresa', email)
+        .single();
 
-      if (signInError) {
-        console.log('Erro no login:', signInError);
-        
-        // Se o erro for de credenciais inválidas, tenta criar uma nova conta
-        if (signInError.message?.includes('Invalid login credentials')) {
-          console.log('Credenciais inválidas, tentando criar conta...');
+      if (empresaError) {
+        console.log('Erro ao verificar empresa:', empresaError);
+        if (empresaError.code === 'PGRST116') {
+          console.log('Empresa não encontrada, tentando criar conta...');
+          // Se não existe, tenta criar uma nova conta
           const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
             email,
             password: senha,
@@ -34,20 +34,33 @@ export const useAuth = () => {
           });
 
           if (signUpError) {
-            if (signUpError.message?.includes('User already registered')) {
-              toast({
-                title: "Erro no Login",
-                description: "Senha incorreta. Por favor, tente novamente.",
-                variant: "destructive",
-              });
-            } else {
-              console.error('Erro ao criar conta:', signUpError);
-              toast({
-                title: "Erro no Cadastro",
-                description: signUpError.message,
-                variant: "destructive",
-              });
-            }
+            console.error('Erro ao criar conta:', signUpError);
+            toast({
+              title: "Erro no Cadastro",
+              description: signUpError.message,
+              variant: "destructive",
+            });
+            return false;
+          }
+
+          // Cria o registro na tabela Empresas
+          const { error: createEmpresaError } = await supabase
+            .from('Empresas')
+            .insert([
+              { 
+                emailempresa: email,
+                senha: senha,
+                NomeEmpresa: 'Nova Empresa' // Nome temporário
+              }
+            ]);
+
+          if (createEmpresaError) {
+            console.error('Erro ao criar empresa:', createEmpresaError);
+            toast({
+              title: "Erro ao Criar Empresa",
+              description: "Não foi possível criar o registro da empresa.",
+              variant: "destructive",
+            });
             return false;
           }
 
@@ -59,14 +72,35 @@ export const useAuth = () => {
             });
             return true;
           }
-        } else {
-          toast({
-            title: "Erro no Login",
-            description: signInError.message,
-            variant: "destructive",
-          });
-          return false;
         }
+        return false;
+      }
+
+      // Se a empresa existe, tenta fazer login
+      console.log('Empresa encontrada, tentando fazer login...');
+      if (empresaData.senha !== senha) {
+        console.log('Senha incorreta');
+        toast({
+          title: "Erro no Login",
+          description: "Senha incorreta. Por favor, tente novamente.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password: senha,
+      });
+
+      if (signInError) {
+        console.error('Erro no login:', signInError);
+        toast({
+          title: "Erro no Login",
+          description: "Ocorreu um erro ao fazer login. Por favor, tente novamente.",
+          variant: "destructive",
+        });
+        return false;
       }
 
       if (signInData?.user) {
