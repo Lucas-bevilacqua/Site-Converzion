@@ -12,41 +12,20 @@ export const useAuth = () => {
     console.log('📧 Email:', email);
 
     try {
-      // Primeiro, verifica se a empresa existe
-      console.log('🔍 Verificando se a empresa existe');
-      const { data: empresaExistente } = await supabase
+      // Primeiro, tenta remover a empresa existente
+      console.log('🗑️ Tentando remover empresa existente');
+      const { error: deleteError } = await supabase
         .from('Empresas')
-        .select('*')
-        .eq('emailempresa', email)
-        .single();
+        .delete()
+        .eq('emailempresa', email);
 
-      if (empresaExistente) {
-        // Se a empresa existe, tenta fazer login
-        console.log('🏢 Empresa encontrada, tentando login');
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password: "default123", // Sempre usa a senha padrão para login
-        });
-
-        if (signInError) {
-          console.log('❌ Login falhou');
-          toast({
-            title: "Erro no Login",
-            description: "Use a senha: default123",
-            variant: "destructive",
-          });
-          return false;
-        }
-
-        console.log('✅ Login bem-sucedido!');
-        toast({
-          title: "Login Realizado",
-          description: "Bem-vindo de volta!",
-        });
-        return true;
+      if (deleteError) {
+        console.log('⚠️ Erro ao tentar remover empresa ou empresa não existia:', deleteError);
+      } else {
+        console.log('✅ Empresa removida com sucesso ou não existia');
       }
 
-      // Se não existe, cria uma nova conta
+      // Agora vamos criar uma nova conta
       console.log('📝 Criando nova conta e empresa');
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
