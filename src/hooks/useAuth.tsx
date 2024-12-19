@@ -11,17 +11,18 @@ export const useAuth = () => {
     console.log('Iniciando processo de autenticação para:', email);
 
     try {
-      // Tentar login primeiro
-      console.log('Tentando fazer login...');
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      // Tentar enviar email de confirmação primeiro
+      console.log('Tentando enviar email de confirmação...');
+      const { error: resendError } = await supabase.auth.resend({
+        type: 'signup',
         email,
-        password: senha,
+        options: {
+          emailRedirectTo: `${window.location.origin}/login`
+        }
       });
 
-      if (signInError) {
-        console.log('Login falhou, erro:', signInError);
-        console.log('Tentando criar novo usuário...');
-        
+      if (resendError) {
+        console.log('Erro ao reenviar, tentando criar novo usuário...');
         // Tentar criar novo usuário
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
@@ -43,54 +44,35 @@ export const useAuth = () => {
         }
 
         console.log('Usuário criado com sucesso:', signUpData);
-        console.log('Enviando email de confirmação...');
-        
-        // Tentar enviar email de confirmação novamente
-        const { error: resendError } = await supabase.auth.resend({
-          type: 'signup',
-          email,
-          options: {
-            emailRedirectTo: `${window.location.origin}/login`
-          }
+        toast({
+          title: "Cadastro Realizado",
+          description: "Aguarde alguns minutos e tente fazer login novamente. O email será enviado do endereço no-reply@mail.app.supabase.io",
         });
+        return false;
+      }
 
-        if (resendError) {
-          console.error('Erro ao reenviar email:', resendError);
-          toast({
-            title: "Atenção",
-            description: "Conta criada, mas houve um problema ao enviar o email. Verifique se o email está correto.",
-            variant: "destructive",
-          });
-        } else {
-          console.log('Email de confirmação enviado com sucesso');
-          toast({
-            title: "Cadastro Realizado",
-            description: "Você receberá um email de confirmação do no-reply@mail.app.supabase.io. Por favor, verifique também sua pasta de spam.",
-          });
-        }
+      // Se chegou aqui, vamos tentar fazer login
+      console.log('Tentando fazer login...');
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password: senha,
+      });
+
+      if (signInError) {
+        console.log('Login falhou, erro:', signInError);
+        toast({
+          title: "Erro no Login",
+          description: "Verifique suas credenciais e tente novamente.",
+          variant: "destructive",
+        });
         return false;
       }
 
       if (!signInData.user?.email_confirmed_at) {
-        console.log('Email não confirmado, tentando reenviar...');
-        
-        const { error: resendError } = await supabase.auth.resend({
-          type: 'signup',
-          email,
-          options: {
-            emailRedirectTo: `${window.location.origin}/login`
-          }
-        });
-
-        if (resendError) {
-          console.error('Erro ao reenviar email:', resendError);
-        } else {
-          console.log('Email de confirmação reenviado com sucesso');
-        }
-
+        console.log('Email não confirmado');
         toast({
           title: "Email Não Confirmado",
-          description: "Um novo email de confirmação foi enviado para " + email + ". Por favor, verifique também sua pasta de spam.",
+          description: "Por favor aguarde alguns minutos e tente novamente. O email será enviado do endereço no-reply@mail.app.supabase.io",
           variant: "destructive",
         });
         return false;
