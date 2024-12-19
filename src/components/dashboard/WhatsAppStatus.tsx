@@ -36,6 +36,8 @@ export const WhatsAppStatus = () => {
 
       if (empresaError || !empresa?.url_instance || !empresa?.apikeyevo) {
         console.error('Erro ao buscar dados da empresa:', empresaError);
+        setNeedsSetup(true);
+        setIsConnected(false);
         return;
       }
 
@@ -43,12 +45,14 @@ export const WhatsAppStatus = () => {
       console.log('🔗 URL da instância:', empresa.url_instance);
       console.log('🔌 Status atual:', empresa.is_connected ? 'Conectado' : 'Desconectado');
 
+      // Verifica o status atual no Evolution API
       const { data, error } = await supabase.functions.invoke('evolution-status', {
         body: { email: session.user.email }
       });
 
       if (error) {
         console.error('❌ Erro ao verificar status:', error);
+        setIsConnected(false);
         if (error.message.includes('Instância não encontrada')) {
           setNeedsSetup(true);
         }
@@ -73,6 +77,7 @@ export const WhatsAppStatus = () => {
 
     } catch (error) {
       console.error('❌ Erro ao verificar status:', error);
+      setIsConnected(false);
       toast({
         variant: "destructive",
         title: "Erro",
