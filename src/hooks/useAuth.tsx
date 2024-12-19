@@ -26,9 +26,7 @@ export const useAuth = () => {
           password: senha,
           options: {
             data: { empresa_id },
-            emailRedirectTo: window.location.origin + '/login',
-            // Desabilita a necessidade de confirmação de email
-            emailConfirm: false
+            emailRedirectTo: window.location.origin + '/login'
           }
         });
 
