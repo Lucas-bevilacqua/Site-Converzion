@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface WhatsAppStatusProps {
   isConnected: boolean;
@@ -30,7 +31,21 @@ export const WhatsAppStatus = ({
         });
         return;
       }
+
+      console.log('Iniciando geração do QR code...');
+      
+      const { data, error } = await supabase.functions.invoke('evolution-qr', {
+        body: { empresa_id: 8 } // TODO: Passar o ID correto da empresa
+      });
+
+      if (error) {
+        console.error('Erro ao gerar QR code:', error);
+        throw error;
+      }
+
+      console.log('QR code gerado com sucesso:', data);
       await onGenerateQR();
+      
     } catch (error: any) {
       console.error('Error generating QR code:', error);
       let errorMessage = "Não foi possível gerar o QR code";
