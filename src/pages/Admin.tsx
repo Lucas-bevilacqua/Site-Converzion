@@ -1,10 +1,7 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -13,179 +10,239 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
 
 const formSchema = z.object({
-  nomeempresa: z.string().min(2, "Nome muito curto"),
-  telefoneempresa: z.string().min(10, "Telefone inválido").max(15, "Telefone inválido"),
-  url_instance: z.string().url("URL inválida"),
-  apikeyevo: z.string().min(10, "API Key muito curta"),
+  nomeempresa: z.string().min(2, {
+    message: "Nome da empresa deve ter pelo menos 2 caracteres.",
+  }),
+  telefoneempresa: z.string().min(10, {
+    message: "Telefone deve ter pelo menos 10 caracteres.",
+  }).max(15, {
+    message: "Telefone deve ter no máximo 15 caracteres.",
+  }),
+  emailempresa: z.string().email({
+    message: "Email inválido.",
+  }),
+  apidify: z.string().optional(),
+  urlinstance: z.string().optional(),
+  apikeyevo: z.string().optional(),
+  prompt: z.string().optional(),
 });
 
-const Admin = () => {
-  const navigate = useNavigate();
+export default function Admin() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    checkAdmin();
-  }, []);
-
-  const checkAdmin = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session || session.user.email !== 'lucasobevi@gmail.com') {
-      navigate('/');
-      toast({
-        title: "Acesso negado",
-        description: "Você não tem permissão para acessar esta página",
-        variant: "destructive",
-      });
-    }
-  };
+  const [empresas, setEmpresas] = useState([]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       nomeempresa: "",
       telefoneempresa: "",
-      url_instance: "",
+      emailempresa: "",
+      apidify: "",
+      urlinstance: "",
       apikeyevo: "",
+      prompt: "",
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  useEffect(() => {
+    fetchEmpresas();
+  }, []);
+
+  async function fetchEmpresas() {
+    try {
+      const { data, error } = await supabase
+        .from("empresas")
+        .select("*")
+        .order("id", { ascending: true });
+
+      if (error) {
+        console.error("Error fetching empresas:", error);
+        return;
+      }
+
+      setEmpresas(data || []);
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  }
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       setLoading(true);
-      console.log("Iniciando cadastro da empresa:", values);
-      
-      // Criar empresa no Supabase
-      const { data: empresa, error: empresaError } = await supabase
-        .from('empresas')
-        .insert([{
+      const { error } = await supabase.from("empresas").insert([
+        {
           nomeempresa: values.nomeempresa,
           telefoneempresa: values.telefoneempresa,
-          url_instance: values.url_instance,
+          emailempresa: values.emailempresa,
+          "API Dify": values.apidify,
+          url_instance: values.urlinstance,
           apikeyevo: values.apikeyevo,
-          is_connected: false,
-        }])
-        .select()
-        .single();
+          prompt: values.prompt,
+        },
+      ]);
 
-      if (empresaError) {
-        console.error('Erro ao cadastrar empresa:', empresaError);
-        throw new Error(`Erro ao cadastrar empresa: ${empresaError.message}`);
-      }
-
-      console.log("Empresa cadastrada com sucesso:", empresa);
-
-      // Criar usuário no Supabase Auth
-      const { error: authError } = await supabase.auth.signUp({
-        email: values.telefoneempresa,
-        password: "senha123",
-      });
-
-      if (authError) {
-        console.error('Erro ao criar usuário:', authError);
-        throw new Error(`Erro ao criar usuário: ${authError.message}`);
-      }
+      if (error) throw error;
 
       toast({
-        title: "Sucesso!",
-        description: "Empresa cadastrada com sucesso",
+        title: "Empresa cadastrada com sucesso!",
+        description: "A empresa foi adicionada ao banco de dados.",
       });
 
       form.reset();
+      fetchEmpresas();
     } catch (error) {
-      console.error('Erro detalhado:', error);
+      console.error("Error:", error);
       toast({
-        title: "Erro",
-        description: error instanceof Error ? error.message : "Não foi possível cadastrar a empresa",
         variant: "destructive",
+        title: "Erro ao cadastrar empresa",
+        description: "Ocorreu um erro ao tentar cadastrar a empresa.",
       });
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="container mx-auto p-4">
       <div className="max-w-2xl mx-auto space-y-8">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Cadastro de Empresas</h1>
-          <Button variant="outline" onClick={() => navigate('/')}>
-            Voltar
-          </Button>
+        <div>
+          <h2 className="text-2xl font-bold mb-4">Cadastro de Empresa</h2>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="nomeempresa"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome da Empresa</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="emailempresa"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email da Empresa</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="empresa@exemplo.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="telefoneempresa"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Telefone da Empresa</FormLabel>
+                    <FormControl>
+                      <Input type="tel" placeholder="Ex: 11999999999" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="apidify"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>API Dify</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="urlinstance"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>URL Instance</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="apikeyevo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>API Key Evolution</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="prompt"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Prompt</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Button type="submit" disabled={loading}>
+                {loading ? "Cadastrando..." : "Cadastrar Empresa"}
+              </Button>
+            </form>
+          </Form>
         </div>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="nomeempresa"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome da Empresa</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="telefoneempresa"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Telefone da Empresa</FormLabel>
-                  <FormControl>
-                    <Input type="tel" placeholder="Ex: 11999999999" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="url_instance"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>URL da Instância Evolution API</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="apikeyevo"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>API Key Evolution</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Cadastrar Empresa
-            </Button>
-          </form>
-        </Form>
+        <div>
+          <h2 className="text-2xl font-bold mb-4">Empresas Cadastradas</h2>
+          <div className="space-y-4">
+            {empresas.map((empresa: any) => (
+              <div
+                key={empresa.id}
+                className="p-4 border rounded-lg shadow-sm space-y-2"
+              >
+                <p>
+                  <strong>Nome:</strong> {empresa.nomeempresa}
+                </p>
+                <p>
+                  <strong>Email:</strong> {empresa.emailempresa}
+                </p>
+                <p>
+                  <strong>Telefone:</strong> {empresa.telefoneempresa}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
-};
-
-export default Admin;
+}
