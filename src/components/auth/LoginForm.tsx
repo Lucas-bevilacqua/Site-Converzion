@@ -6,15 +6,18 @@ import { useToast } from "@/hooks/use-toast";
 
 export const LoginForm = () => {
   const [email, setEmail] = useState("");
-  const [senha, setSenha] = useState("");
+  const [senha, setSenha] = useState("cliente123"); // Inicializa com a senha padrão
   const { loading, handleEmailSignIn } = useAuth();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Iniciando submissão do formulário com email:', email);
+    console.log('📝 Iniciando submissão do formulário');
+    console.log('📧 Email:', email);
+    console.log('🔑 Senha:', senha);
     
     if (!email) {
+      console.log('❌ Email não fornecido');
       toast({
         title: "Campo obrigatório",
         description: "Por favor, preencha o email.",
@@ -23,14 +26,14 @@ export const LoginForm = () => {
       return;
     }
 
-    // Se não foi fornecida senha, usa a senha padrão
-    const senhaToUse = senha || "cliente123";
-    console.log('Tentando login com senha:', senhaToUse);
-
-    const success = await handleEmailSignIn(email, senhaToUse, 1);
+    console.log('✨ Tentando login com as credenciais fornecidas');
+    const success = await handleEmailSignIn(email, senha, 1);
+    
     if (success) {
-      console.log('Login bem-sucedido, redirecionando...');
+      console.log('🎉 Login bem-sucedido, redirecionando...');
       window.location.href = "/dashboard";
+    } else {
+      console.log('❌ Login falhou');
     }
   };
 
@@ -56,7 +59,7 @@ export const LoginForm = () => {
           className="w-full"
         />
         <p className="text-sm text-muted-foreground mt-1">
-          Senha padrão para novos usuários: cliente123
+          Senha padrão pré-preenchida: cliente123
         </p>
       </div>
 
