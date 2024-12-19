@@ -64,9 +64,9 @@ serve(async (req) => {
     console.log('URL base da instância:', baseUrl)
 
     try {
-      // Generate QR code using the Evolution API
-      // According to Evolution API docs, the endpoint is /instance/qr
-      const qrResponse = await fetch(`${baseUrl}/instance/qr`, {
+      console.log('Tentando conectar à instância:', empresa.instance_name)
+      // Use the correct endpoint /instance/connect
+      const qrResponse = await fetch(`${baseUrl}/instance/connect`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -89,7 +89,7 @@ serve(async (req) => {
       // Update QR code URL in database
       const { error: updateError } = await supabaseClient
         .from('Empresas')
-        .update({ qr_code_url: qrData.qrcode.base64 }) // Updated to match Evolution API response
+        .update({ qr_code_url: qrData.qrcode.base64 })
         .eq('emailempresa', email)
 
       if (updateError) {
@@ -99,7 +99,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: true,
-          qr: qrData.qrcode.base64 // Updated to match Evolution API response
+          qr: qrData.qrcode.base64
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
