@@ -11,7 +11,7 @@ interface WhatsAppStatusProps {
   telefoneempresa: string | null;
 }
 
-const WhatsAppStatus = ({ 
+export const WhatsAppStatus = ({ 
   isConnected, 
   isGeneratingQR, 
   qrCodeUrl, 
@@ -92,5 +92,3 @@ const WhatsAppStatus = ({
     </Card>
   );
 };
-
-export default WhatsAppStatus;

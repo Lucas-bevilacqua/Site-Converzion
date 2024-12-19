@@ -18,7 +18,7 @@ interface AIAgentConfigProps {
   isAdmin?: boolean;
 }
 
-const AIAgentConfig = ({ 
+export const AIAgentConfig = ({ 
   prompt, 
   loading, 
   onPromptChange, 
@@ -114,5 +114,3 @@ const AIAgentConfig = ({
     </div>
   );
 };
-
-export default AIAgentConfig;
