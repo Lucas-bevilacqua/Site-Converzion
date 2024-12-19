@@ -51,12 +51,14 @@ export const WhatsAppStatus = ({
         return;
       }
 
-      console.log('URL da instância:', empresa.url_instance);
+      // Clean up the URL to ensure it's just the base URL without any trailing paths
+      const baseUrl = empresa.url_instance.split('/message')[0].replace(/\/$/, '');
+      console.log('URL base da instância:', baseUrl);
       
       const { data, error } = await supabase.functions.invoke('evolution-qr', {
         body: { 
           empresa_id: 8, // TODO: Use dynamic empresa ID
-          instance_url: empresa.url_instance
+          instance_url: baseUrl
         }
       });
 
