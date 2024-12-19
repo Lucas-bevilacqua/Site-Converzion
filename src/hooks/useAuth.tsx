@@ -11,69 +11,74 @@ export const useAuth = () => {
     console.log('Iniciando processo de autenticação para:', email);
 
     try {
-      // First check if user exists
-      const { data: { user: existingUser }, error: getUserError } = await supabase.auth.getUser();
-      console.log('Verificando usuário existente:', existingUser);
-
-      if (!existingUser) {
-        console.log('Usuário não encontrado, tentando criar...');
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email,
-          password: senha,
-          options: {
-            data: { empresa_id },
-            emailRedirectTo: `${window.location.origin}/login`
-          }
-        });
-
-        if (signUpError) {
-          console.error('Erro ao criar usuário:', signUpError);
-          toast({
-            title: "Erro no Cadastro",
-            description: "Não foi possível criar sua conta. Verifique suas credenciais.",
-            variant: "destructive",
-          });
-          return false;
-        }
-
-        console.log('Usuário criado com sucesso:', signUpData);
-        if (!signUpData.user?.email_confirmed_at) {
-          toast({
-            title: "Confirme seu Email",
-            description: "Enviamos um link de confirmação para seu email. Por favor verifique sua caixa de entrada e spam.",
-          });
-          return false;
-        }
-      }
-
-      // Try to sign in
-      console.log('Tentando fazer login...');
+      // First try to sign in
+      console.log('Tentando fazer login inicial...');
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password: senha,
       });
 
       if (signInError) {
-        console.error('Erro no login:', signInError);
+        console.log('Login inicial falhou, verificando se precisamos criar usuário:', signInError);
         
-        if (signInError.message.includes('Email not confirmed')) {
+        // Check if user exists but email isn't confirmed
+        const { data: { user: existingUser }, error: getUserError } = await supabase.auth.getUser();
+        console.log('Verificando usuário existente:', existingUser);
+
+        if (!existingUser) {
+          console.log('Usuário não encontrado, criando nova conta...');
+          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+            email,
+            password: senha,
+            options: {
+              data: { empresa_id },
+              emailRedirectTo: `${window.location.origin}/login`
+            }
+          });
+
+          if (signUpError) {
+            console.error('Erro ao criar usuário:', signUpError);
+            toast({
+              title: "Erro no Cadastro",
+              description: "Não foi possível criar sua conta. Por favor, tente novamente.",
+              variant: "destructive",
+            });
+            return false;
+          }
+
+          console.log('Usuário criado com sucesso:', signUpData);
+          toast({
+            title: "Verifique seu Email",
+            description: "Um email de confirmação foi enviado para " + email + ". Por favor, verifique também sua pasta de spam. O email virá de no-reply@mail.app.supabase.io",
+          });
+          
+          // Try to resend confirmation email after a short delay
+          setTimeout(async () => {
+            const { error: resendError } = await supabase.auth.resend({
+              type: 'signup',
+              email: email,
+            });
+            if (resendError) {
+              console.error('Erro ao reenviar email:', resendError);
+            } else {
+              console.log('Email de confirmação reenviado');
+            }
+          }, 2000);
+          
+          return false;
+        } else {
+          // User exists but might not be confirmed
           toast({
             title: "Email não Confirmado",
-            description: "Por favor, confirme seu email antes de fazer login. Verifique sua caixa de entrada e spam.",
+            description: "Por favor confirme seu email antes de fazer login. Verifique sua caixa de entrada e spam. O email virá de no-reply@mail.app.supabase.io",
             variant: "destructive",
           });
-        } else {
-          toast({
-            title: "Erro no Login",
-            description: "Credenciais inválidas. Verifique seu email e senha.",
-            variant: "destructive",
-          });
+          return false;
         }
-        return false;
       }
 
       if (signInData.user) {
-        console.log('Login realizado com sucesso');
+        console.log('Login realizado com sucesso:', signInData);
         toast({
           title: "Sucesso",
           description: "Login realizado com sucesso",
@@ -86,7 +91,7 @@ export const useAuth = () => {
       console.error('Erro inesperado:', error);
       toast({
         title: "Erro",
-        description: "Ocorreu um erro inesperado. Tente novamente.",
+        description: "Ocorreu um erro inesperado. Por favor, tente novamente.",
         variant: "destructive",
       });
       return false;
