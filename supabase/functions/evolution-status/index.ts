@@ -15,7 +15,11 @@ serve(async (req) => {
     const { email } = await req.json()
     
     if (!email) {
-      throw new Error('Email não fornecido')
+      console.error('Email não fornecido')
+      return new Response(
+        JSON.stringify({ error: 'Email não fornecido' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      )
     }
 
     // Get Supabase client
@@ -23,12 +27,16 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     
     if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Missing Supabase environment variables')
+      console.error('Missing Supabase environment variables')
+      return new Response(
+        JSON.stringify({ error: 'Configuração do servidor incompleta' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      )
     }
 
     const supabaseClient = createClient(supabaseUrl, supabaseKey)
-    
-    // Get empresa data for the specific email
+
+    // Get empresa data
     const { data: empresa, error: empresaError } = await supabaseClient
       .from('Empresas')
       .select('url_instance, instance_name, apikeyevo')
@@ -36,7 +44,7 @@ serve(async (req) => {
       .single()
 
     if (empresaError || !empresa) {
-      console.error('Erro ao buscar dados da empresa:', empresaError)
+      console.error('Erro ao buscar empresa:', empresaError)
       return new Response(
         JSON.stringify({ error: 'Empresa não encontrada' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
@@ -44,54 +52,72 @@ serve(async (req) => {
     }
 
     if (!empresa.url_instance || !empresa.apikeyevo || !empresa.instance_name) {
+      console.error('Credenciais da Evolution incompletas')
       return new Response(
         JSON.stringify({ error: 'Credenciais do Evolution não configuradas' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
     }
 
-    // Clean up the URL to ensure it's just the base URL without any trailing paths
-    const baseUrl = empresa.url_instance.split('/message')[0].replace(/\/$/, '')
+    // Clean up the URL to ensure it's just the base URL
+    const baseUrl = empresa.url_instance.split('/message')[0].replace(/\/+$/, '')
     console.log('URL base da instância:', baseUrl)
 
-    // Check instance status using the provided structure
-    const statusResponse = await fetch(`${baseUrl}/instance/connectionState/${empresa.instance_name}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': empresa.apikeyevo
-      }
-    })
+    try {
+      // Check instance status
+      const statusResponse = await fetch(`${baseUrl}/instance/connectionState/${empresa.instance_name}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': empresa.apikeyevo
+        }
+      })
 
-    if (!statusResponse.ok) {
-      console.error('Erro na resposta do Evolution:', await statusResponse.text())
+      if (!statusResponse.ok) {
+        const errorText = await statusResponse.text()
+        console.error('Erro na resposta do Evolution:', errorText)
+        
+        // If instance doesn't exist, return specific error
+        if (statusResponse.status === 404) {
+          return new Response(
+            JSON.stringify({ error: 'Instância não encontrada', needsSetup: true }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+          )
+        }
+        
+        throw new Error(`Evolution API returned ${statusResponse.status}: ${errorText}`)
+      }
+
+      const statusData = await statusResponse.json()
+      console.log('Status data:', statusData)
+
+      // Update connection status in database
+      const isConnected = statusData.state === 'open'
+      const { error: updateError } = await supabaseClient
+        .from('Empresas')
+        .update({ is_connected: isConnected })
+        .eq('emailempresa', email)
+
+      if (updateError) {
+        console.error('Erro ao atualizar status:', updateError)
+      }
+
       return new Response(
-        JSON.stringify({ error: 'Erro ao verificar status' }),
+        JSON.stringify({ 
+          success: true, 
+          isConnected,
+          state: statusData.state,
+          instanceExists: true
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+
+    } catch (error) {
+      console.error('Erro ao verificar status:', error)
+      return new Response(
+        JSON.stringify({ error: `Erro ao verificar status: ${error.message}` }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       )
     }
-
-    const statusData = await statusResponse.json()
-    console.log('Status data:', statusData)
-
-    // Update connection status in database
-    const isConnected = statusData.state === 'open'
-    const { error: updateError } = await supabaseClient
-      .from('Empresas')
-      .update({ is_connected: isConnected })
-      .eq('emailempresa', email)
-
-    if (updateError) {
-      console.error('Erro ao atualizar status:', updateError)
-    }
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        isConnected,
-        state: statusData.state 
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
 
   } catch (error) {
     console.error('Erro na função:', error)

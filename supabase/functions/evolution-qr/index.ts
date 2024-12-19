@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -39,7 +39,7 @@ serve(async (req) => {
     // Get empresa data
     const { data: empresa, error: empresaError } = await supabaseClient
       .from('Empresas')
-      .select('*')
+      .select('url_instance, instance_name, apikeyevo')
       .eq('emailempresa', email)
       .single()
 
@@ -59,14 +59,43 @@ serve(async (req) => {
       )
     }
 
-    // Clean up the URL and ensure it ends with a slash if needed
+    // Clean up the URL
     const baseUrl = empresa.url_instance.split('/message')[0].replace(/\/+$/, '')
     console.log('URL base da instância:', baseUrl)
 
     try {
-      console.log('Tentando conectar à instância:', empresa.instance_name)
-      // Use the correct endpoint /instance/connect
-      const qrResponse = await fetch(`${baseUrl}/instance/connect`, {
+      // First check if instance exists
+      const statusResponse = await fetch(`${baseUrl}/instance/connectionState/${empresa.instance_name}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': empresa.apikeyevo
+        }
+      })
+
+      // If instance doesn't exist, create it
+      if (statusResponse.status === 404) {
+        console.log('Instância não existe, criando nova...')
+        const createResponse = await fetch(`${baseUrl}/instance/create`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': empresa.apikeyevo
+          },
+          body: JSON.stringify({
+            instanceName: empresa.instance_name
+          })
+        })
+
+        if (!createResponse.ok) {
+          const errorText = await createResponse.text()
+          console.error('Erro ao criar instância:', errorText)
+          throw new Error(`Erro ao criar instância: ${errorText}`)
+        }
+      }
+
+      // Now connect/reconnect the instance
+      console.log('Conectando à instância:', empresa.instance_name)
+      const connectResponse = await fetch(`${baseUrl}/instance/connect`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -77,13 +106,13 @@ serve(async (req) => {
         })
       })
 
-      if (!qrResponse.ok) {
-        const errorText = await qrResponse.text()
-        console.error('Erro na resposta do Evolution:', errorText)
-        throw new Error(`Evolution API returned ${qrResponse.status}: ${errorText}`)
+      if (!connectResponse.ok) {
+        const errorText = await connectResponse.text()
+        console.error('Erro ao conectar:', errorText)
+        throw new Error(`Evolution API returned ${connectResponse.status}: ${errorText}`)
       }
 
-      const qrData = await qrResponse.json()
+      const qrData = await connectResponse.json()
       console.log('QR code gerado com sucesso')
 
       // Update QR code URL in database
@@ -107,9 +136,7 @@ serve(async (req) => {
     } catch (error) {
       console.error('Erro ao gerar QR code:', error)
       return new Response(
-        JSON.stringify({ 
-          error: `Erro ao gerar QR code: ${error.message}` 
-        }),
+        JSON.stringify({ error: `Erro ao gerar QR code: ${error.message}` }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       )
     }

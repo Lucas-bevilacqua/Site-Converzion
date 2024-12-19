@@ -15,6 +15,7 @@ export const WhatsAppStatus = () => {
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
+  const [needsSetup, setNeedsSetup] = useState(false);
   const { toast } = useToast();
 
   const checkConnectionStatus = async () => {
@@ -48,11 +49,15 @@ export const WhatsAppStatus = () => {
 
       if (error) {
         console.error('❌ Erro ao verificar status:', error);
+        if (error.message.includes('Instância não encontrada')) {
+          setNeedsSetup(true);
+        }
         return;
       }
 
       console.log('✅ Status da conexão:', data);
       setIsConnected(data.isConnected);
+      setNeedsSetup(data.needsSetup || false);
 
       // Atualiza o status no banco de dados se for diferente
       if (empresa.is_connected !== data.isConnected) {
@@ -68,6 +73,11 @@ export const WhatsAppStatus = () => {
 
     } catch (error) {
       console.error('❌ Erro ao verificar status:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível verificar o status da conexão."
+      });
     }
   };
 
@@ -122,7 +132,7 @@ export const WhatsAppStatus = () => {
         toast({
           variant: "destructive",
           title: "Erro",
-          description: "Não foi possível gerar o QR code. Tente novamente."
+          description: error.message || "Não foi possível gerar o QR code. Tente novamente."
         });
         return;
       }
@@ -147,7 +157,7 @@ export const WhatsAppStatus = () => {
     <div className="space-y-4">
       <div className="flex items-center gap-4">
         <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-        <span>{isConnected ? 'Conectado' : 'Desconectado'}</span>
+        <span>{isConnected ? 'Conectado' : needsSetup ? 'Não configurado' : 'Desconectado'}</span>
         <Button
           onClick={handleConnect}
           disabled={isLoading}
@@ -161,7 +171,7 @@ export const WhatsAppStatus = () => {
           ) : (
             <>
               <QrCode className="mr-2 h-4 w-4" />
-              {isConnected ? 'Reconectar' : 'Conectar WhatsApp'}
+              {needsSetup ? 'Configurar WhatsApp' : isConnected ? 'Reconectar' : 'Conectar WhatsApp'}
             </>
           )}
         </Button>
@@ -170,7 +180,9 @@ export const WhatsAppStatus = () => {
       <Dialog open={showQRCode} onOpenChange={setShowQRCode}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Conectar WhatsApp</DialogTitle>
+            <DialogTitle>
+              {needsSetup ? 'Configurar WhatsApp' : 'Conectar WhatsApp'}
+            </DialogTitle>
           </DialogHeader>
           <div className="flex items-center justify-center p-6">
             {qrCode && (
