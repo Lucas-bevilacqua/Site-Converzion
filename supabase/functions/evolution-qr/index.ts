@@ -62,7 +62,7 @@ serve(async (req) => {
         instanceName: "instance1",
         qrcode: true,
         integration: "WHATSAPP-BAILEYS",
-        token: empresa.apikeyevo // Added token parameter
+        token: empresa.apikeyevo
       })
     })
 
