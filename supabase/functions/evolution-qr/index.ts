@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -59,14 +58,14 @@ serve(async (req) => {
       )
     }
 
-    // Clean up the URL
+    // Clean up the URL - remove any trailing /message or other paths
     const baseUrl = empresa.url_instance.split('/message')[0].replace(/\/+$/, '')
     console.log('URL base da instância:', baseUrl)
 
     try {
       // Requisição 1: Verifica se a instância existe
       console.log('Verificando se a instância existe:', empresa.instance_name)
-      const statusResponse = await fetch(`${baseUrl}/instance/connectionState/${empresa.instance_name}`, {
+      const statusResponse = await fetch(`${baseUrl}/instance/info/${empresa.instance_name}`, {
         headers: {
           'Content-Type': 'application/json',
           'apikey': empresa.apikeyevo
@@ -96,26 +95,23 @@ serve(async (req) => {
         }
       }
 
-      // Requisição 3: Conecta/reconecta a instância
-      console.log('Conectando à instância:', empresa.instance_name)
-      const connectResponse = await fetch(`${baseUrl}/instance/connect`, {
-        method: 'POST',
+      // Requisição 3: Gera QR code
+      console.log('Gerando QR code para instância:', empresa.instance_name)
+      const qrResponse = await fetch(`${baseUrl}/instance/qrcode/${empresa.instance_name}`, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'apikey': empresa.apikeyevo
-        },
-        body: JSON.stringify({
-          instanceName: empresa.instance_name
-        })
+        }
       })
 
-      if (!connectResponse.ok) {
-        const errorText = await connectResponse.text()
-        console.error('Erro ao conectar:', errorText)
-        throw new Error(`Evolution API returned ${connectResponse.status}: ${errorText}`)
+      if (!qrResponse.ok) {
+        const errorText = await qrResponse.text()
+        console.error('Erro ao gerar QR code:', errorText)
+        throw new Error(`Evolution API returned ${qrResponse.status}: ${errorText}`)
       }
 
-      const qrData = await connectResponse.json()
+      const qrData = await qrResponse.json()
       console.log('QR code gerado com sucesso')
 
       // Update QR code URL in database
