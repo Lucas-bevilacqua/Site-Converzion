@@ -11,18 +11,16 @@ export const useAuth = () => {
     console.log('Iniciando processo de autenticação para:', email);
 
     try {
-      // Tentar enviar email de confirmação primeiro
-      console.log('Tentando enviar email de confirmação...');
-      const { error: resendError } = await supabase.auth.resend({
-        type: 'signup',
+      // Tentar login primeiro
+      console.log('Tentando fazer login...');
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/login`
-        }
+        password: senha,
       });
 
-      if (resendError) {
-        console.log('Erro ao reenviar, tentando criar novo usuário...');
+      if (signInError) {
+        console.log('Login falhou, tentando criar novo usuário...', signInError);
+        
         // Tentar criar novo usuário
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
@@ -36,8 +34,8 @@ export const useAuth = () => {
         if (signUpError) {
           console.error('Erro ao criar usuário:', signUpError);
           toast({
-            title: "Erro no Cadastro",
-            description: "Não foi possível criar sua conta. Por favor, tente novamente.",
+            title: "Erro no Login",
+            description: "Verifique suas credenciais e tente novamente.",
             variant: "destructive",
           });
           return false;
@@ -45,37 +43,43 @@ export const useAuth = () => {
 
         console.log('Usuário criado com sucesso:', signUpData);
         toast({
-          title: "Cadastro Realizado",
-          description: "Aguarde alguns minutos e tente fazer login novamente. O email será enviado do endereço no-reply@mail.app.supabase.io",
-        });
-        return false;
-      }
-
-      // Se chegou aqui, vamos tentar fazer login
-      console.log('Tentando fazer login...');
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password: senha,
-      });
-
-      if (signInError) {
-        console.log('Login falhou, erro:', signInError);
-        toast({
-          title: "Erro no Login",
-          description: "Verifique suas credenciais e tente novamente.",
-          variant: "destructive",
+          title: "Conta Criada",
+          description: "Tente fazer login agora com suas credenciais.",
         });
         return false;
       }
 
       if (!signInData.user?.email_confirmed_at) {
-        console.log('Email não confirmado');
+        console.log('Email não confirmado, tentando login direto...');
         toast({
-          title: "Email Não Confirmado",
-          description: "Por favor aguarde alguns minutos e tente novamente. O email será enviado do endereço no-reply@mail.app.supabase.io",
-          variant: "destructive",
+          title: "Tentando Login",
+          description: "Aguarde enquanto verificamos suas credenciais...",
         });
-        return false;
+        
+        // Tentar login novamente após pequeno delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        const { data: retryData, error: retryError } = await supabase.auth.signInWithPassword({
+          email,
+          password: senha,
+        });
+
+        if (retryError || !retryData.user) {
+          console.error('Erro no segundo login:', retryError);
+          toast({
+            title: "Erro no Login",
+            description: "Verifique suas credenciais e tente novamente.",
+            variant: "destructive",
+          });
+          return false;
+        }
+
+        console.log('Login bem sucedido após retry:', retryData);
+        toast({
+          title: "Sucesso",
+          description: "Login realizado com sucesso",
+        });
+        return true;
       }
 
       console.log('Login realizado com sucesso');
