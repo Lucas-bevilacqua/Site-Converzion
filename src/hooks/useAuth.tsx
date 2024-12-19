@@ -14,13 +14,13 @@ export const useAuth = () => {
     console.log('📧 Email:', email);
 
     try {
-      // Primeiro tenta fazer login
+      // First try to sign in
       const { success: signInSuccess, error: signInError } = await signInUser(email, senha);
       
       if (signInSuccess) {
         console.log('✅ Login bem-sucedido!');
         
-        // Verifica se existe empresa
+        // Check if empresa exists
         const { data: empresa } = await supabase
           .from('Empresas')
           .select()
@@ -39,45 +39,55 @@ export const useAuth = () => {
         return true;
       }
 
-      // Se o login falhar, tenta criar uma nova conta
-      console.log('🆕 Tentando criar nova conta...');
-      
-      const { success: signUpSuccess, error: signUpError } = await signUpUser(email, senha, empresa_id);
-      
-      if (!signUpSuccess) {
-        toast({
-          title: "Erro no Cadastro",
-          description: signUpError || "Não foi possível criar sua conta. Tente novamente.",
-          variant: "destructive",
+      // If login failed because user doesn't exist, try to create a new account
+      if (signInError === 'user_not_found') {
+        console.log('🆕 Tentando criar nova conta...');
+        
+        const { success: signUpSuccess, error: signUpError } = await signUpUser(email, senha, empresa_id);
+        
+        if (!signUpSuccess) {
+          toast({
+            title: "Erro no Cadastro",
+            description: signUpError || "Não foi possível criar sua conta. Tente novamente.",
+            variant: "destructive",
+          });
+          return false;
+        }
+
+        // Create new empresa
+        console.log('📝 Criando nova empresa...');
+        const { error: createEmpresaError } = await createEmpresa({
+          id: empresa_id,
+          emailempresa: email,
+          senha: senha,
+          NomeEmpresa: 'Nova Empresa'
         });
-        return false;
+
+        if (createEmpresaError) {
+          console.error('❌ Erro ao criar empresa:', createEmpresaError);
+          toast({
+            title: "Erro ao Criar Empresa",
+            description: "Ocorreu um erro ao criar sua empresa. Tente novamente.",
+            variant: "destructive",
+          });
+          return false;
+        }
+
+        console.log('🎉 Conta e empresa criadas com sucesso!');
+        toast({
+          title: "Cadastro Realizado",
+          description: "Sua conta foi criada com sucesso!",
+        });
+        return true;
       }
 
-      // Cria nova empresa
-      console.log('📝 Criando nova empresa...');
-      const { error: createEmpresaError } = await createEmpresa({
-        id: empresa_id,
-        emailempresa: email,
-        senha: senha,
-        NomeEmpresa: 'Nova Empresa'
-      });
-
-      if (createEmpresaError) {
-        console.error('❌ Erro ao criar empresa:', createEmpresaError);
-        toast({
-          title: "Erro ao Criar Empresa",
-          description: "Ocorreu um erro ao criar sua empresa. Tente novamente.",
-          variant: "destructive",
-        });
-        return false;
-      }
-
-      console.log('🎉 Conta e empresa criadas com sucesso!');
+      // If we got here, it's an unexpected error
       toast({
-        title: "Cadastro Realizado",
-        description: "Sua conta foi criada com sucesso!",
+        title: "Erro na Autenticação",
+        description: signInError || "Ocorreu um erro inesperado. Tente novamente.",
+        variant: "destructive",
       });
-      return true;
+      return false;
 
     } catch (error) {
       console.error('❌ Erro inesperado:', error);
