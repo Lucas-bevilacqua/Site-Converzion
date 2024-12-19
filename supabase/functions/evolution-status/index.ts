@@ -9,7 +9,6 @@ const corsHeaders = {
 serve(async (req) => {
   console.log('📥 Nova requisição recebida')
   
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     console.log('👉 Requisição OPTIONS - retornando headers CORS')
     return new Response('ok', { headers: corsHeaders })
@@ -28,7 +27,6 @@ serve(async (req) => {
 
     console.log('📧 Verificando status para email:', email)
 
-    // Get Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     
@@ -42,7 +40,6 @@ serve(async (req) => {
 
     const supabaseClient = createClient(supabaseUrl, supabaseKey)
 
-    // Get empresa data
     console.log('🔍 Buscando dados da empresa')
     const { data: empresa, error: empresaError } = await supabaseClient
       .from('Empresas')
@@ -71,7 +68,6 @@ serve(async (req) => {
 
     // Clean up the URL and instance name
     const baseUrl = empresa.url_instance.split('/message')[0].replace(/\/+$/, '')
-    // Remove espaços e caracteres especiais do nome da instância
     const instanceName = encodeURIComponent(empresa.instance_name.trim())
     console.log('🌐 URL base da instância:', baseUrl)
     console.log('📱 Nome da instância (encoded):', instanceName)

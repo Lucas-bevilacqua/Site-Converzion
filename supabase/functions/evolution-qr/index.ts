@@ -37,6 +37,7 @@ serve(async (req) => {
     const supabaseClient = createClient(supabaseUrl, supabaseKey)
 
     // Get empresa data
+    console.log('🔍 Buscando dados da empresa')
     const { data: empresa, error: empresaError } = await supabaseClient
       .from('Empresas')
       .select('url_instance, instance_name, apikeyevo')
@@ -62,44 +63,12 @@ serve(async (req) => {
     // Clean up the URL and instance name
     const baseUrl = empresa.url_instance.split('/message')[0].replace(/\/+$/, '')
     const instanceName = encodeURIComponent(empresa.instance_name.trim())
-    console.log('URL base da instância:', baseUrl)
-    console.log('Nome da instância (encoded):', instanceName)
+    console.log('🌐 URL base da instância:', baseUrl)
+    console.log('📱 Nome da instância (encoded):', instanceName)
 
     try {
       // Primeiro verifica se a instância existe
-      console.log('Verificando se a instância existe:', instanceName)
-      const statusResponse = await fetch(`${baseUrl}/instance/fetchInstances`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': empresa.apikeyevo
-        }
-      })
-
-      // Se a instância não existir, cria uma nova
-      if (statusResponse.status === 404 || (await statusResponse.json()).length === 0) {
-        console.log('Instância não existe, criando nova...')
-        
-        // Cria nova instância
-        const createResponse = await fetch(`${baseUrl}/instance/create`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': empresa.apikeyevo
-          },
-          body: JSON.stringify({
-            instanceName: empresa.instance_name.trim()
-          })
-        })
-
-        if (!createResponse.ok) {
-          const errorText = await createResponse.text()
-          console.error('Erro ao criar instância:', errorText)
-          throw new Error(`Erro ao criar instância: ${errorText}`)
-        }
-      }
-
-      // Conecta a instância
-      console.log('Conectando instância:', instanceName)
+      console.log('📱 Verificando se a instância existe:', instanceName)
       const connectResponse = await fetch(`${baseUrl}/instance/connect/${instanceName}`, {
         method: 'GET',
         headers: {
@@ -115,7 +84,7 @@ serve(async (req) => {
       }
 
       const connectData = await connectResponse.json()
-      console.log('QR code gerado com sucesso')
+      console.log('✅ QR code gerado com sucesso')
 
       // Update QR code URL in database
       const { error: updateError } = await supabaseClient
