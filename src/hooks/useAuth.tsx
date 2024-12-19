@@ -14,24 +14,30 @@ export const useAuth = () => {
 
     try {
       // Primeiro, verifica se já existe uma empresa com este email
-      const { data: empresaExistente } = await supabase
+      const { data: empresaExistente, error: empresaError } = await supabase
         .from('Empresas')
         .select('*')
         .eq('emailempresa', email)
         .single();
 
+      console.log('Resultado da busca por empresa:', { empresaExistente, empresaError });
+
       if (empresaExistente) {
-        console.log('Empresa encontrada, tentando fazer login');
-        const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        console.log('Empresa encontrada, tentando fazer login com senha fornecida');
+        
+        // Tenta fazer login com as credenciais fornecidas
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password: senha,
         });
+
+        console.log('Resultado do login:', { signInData, signInError });
 
         if (signInError) {
           console.error('Erro ao fazer login:', signInError);
           toast({
             title: "Erro no Login",
-            description: "Email ou senha incorretos.",
+            description: "Email ou senha incorretos. Se você é um novo usuário, use a senha padrão: cliente123",
             variant: "destructive",
           });
           return false;
@@ -45,12 +51,14 @@ export const useAuth = () => {
         return true;
       }
 
-      // Se não existe, cria uma nova conta com a senha padrão
-      console.log('Empresa não encontrada, criando nova conta com senha padrão');
+      // Se não existe, cria uma nova conta
+      console.log('Empresa não encontrada, criando nova conta');
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
-        password: DEFAULT_PASSWORD, // Usando a senha padrão para novos usuários
+        password: DEFAULT_PASSWORD,
       });
+
+      console.log('Resultado do cadastro:', { signUpData, signUpError });
 
       if (signUpError) {
         console.error('Erro ao criar conta:', signUpError);
@@ -69,10 +77,12 @@ export const useAuth = () => {
           {
             id: empresa_id,
             emailempresa: email,
-            senha: DEFAULT_PASSWORD, // Salvando a senha padrão no registro da empresa
+            senha: DEFAULT_PASSWORD,
             NomeEmpresa: 'Nova Empresa'
           }
         ]);
+
+      console.log('Resultado da criação da empresa:', { createEmpresaError });
 
       if (createEmpresaError) {
         console.error('Erro ao criar empresa:', createEmpresaError);
