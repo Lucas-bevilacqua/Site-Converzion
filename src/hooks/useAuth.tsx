@@ -12,7 +12,24 @@ export const useAuth = () => {
     console.log('📧 Email:', email);
 
     try {
-      // Primeiro, verifica se já existe uma empresa com este email
+      // Primeiro, tenta fazer login diretamente
+      console.log('🔑 Tentando login direto com as credenciais fornecidas');
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password: senha,
+      });
+
+      if (!signInError) {
+        console.log('✅ Login bem-sucedido!');
+        toast({
+          title: "Login Realizado",
+          description: "Bem-vindo de volta!",
+        });
+        return true;
+      }
+
+      // Se o login falhou, verifica se a empresa existe
+      console.log('🔍 Verificando se a empresa existe');
       const { data: empresaExistente } = await supabase
         .from('Empresas')
         .select('*')
@@ -20,28 +37,13 @@ export const useAuth = () => {
         .single();
 
       if (empresaExistente) {
-        console.log('🏢 Empresa já existe, tentando fazer login');
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password: senha,
-        });
-
-        if (signInError) {
-          console.log('❌ Login falhou, use a senha padrão');
-          toast({
-            title: "Erro no Login",
-            description: "Use a senha: default123",
-            variant: "destructive",
-          });
-          return false;
-        }
-
-        console.log('✅ Login bem-sucedido!');
+        console.log('❌ Empresa existe mas login falhou. Senha incorreta.');
         toast({
-          title: "Login Realizado",
-          description: "Bem-vindo de volta!",
+          title: "Erro no Login",
+          description: "Use a senha: default123",
+          variant: "destructive",
         });
-        return true;
+        return false;
       }
 
       // Se não existe, cria uma nova conta

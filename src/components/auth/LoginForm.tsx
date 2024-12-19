@@ -25,7 +25,7 @@ export const LoginForm = () => {
     }
 
     console.log('✨ Tentando login/cadastro com o email fornecido');
-    const success = await handleEmailSignIn(email, "default123", 1);
+    const success = await handleEmailSignIn(email, "default123", Date.now());
     
     if (success) {
       console.log('🎉 Login/cadastro bem-sucedido, redirecionando...');
