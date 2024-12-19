@@ -30,14 +30,28 @@ export const LoginForm = () => {
 
     try {
       console.log('✨ Tentando login/cadastro');
+      
+      // Clear any existing session first
+      await supabase.auth.signOut();
+      
       const success = await handleEmailSignIn(email, password, Date.now());
       
       if (success) {
         console.log('🎉 Login/cadastro bem-sucedido');
-        console.log('✅ Redirecionando para dashboard...');
-        window.location.href = "/dashboard";
+        // Get the current session to verify
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (session) {
+          console.log('✅ Sessão válida obtida');
+          console.log('✅ Redirecionando para dashboard...');
+          window.location.href = "/dashboard";
+        } else {
+          console.log('❌ Sessão não obtida:', sessionError);
+          throw new Error('Falha ao obter sessão');
+        }
       } else {
         console.log('❌ Login/cadastro falhou');
+        throw new Error('Falha na autenticação');
       }
     } catch (error) {
       console.error('❌ Erro durante autenticação:', error);
