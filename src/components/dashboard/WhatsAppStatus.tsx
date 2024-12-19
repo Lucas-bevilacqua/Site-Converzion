@@ -22,6 +22,63 @@ export const WhatsAppStatus = ({
 }: WhatsAppStatusProps) => {
   const { toast } = useToast();
 
+  // Poll for connection status every 30 seconds
+  useEffect(() => {
+    const checkConnectionStatus = async () => {
+      try {
+        console.log('🔄 Verificando status de conexão...');
+        
+        // First get the empresa data to get the instance URL
+        const { data: empresa, error: empresaError } = await supabase
+          .from('Empresas')
+          .select('url_instance, apikeyevo')
+          .eq('id', 8) // TODO: Use dynamic empresa ID
+          .single();
+
+        if (empresaError || !empresa?.url_instance) {
+          console.error('Erro ao buscar URL da instância:', empresaError);
+          return;
+        }
+
+        // Clean up the URL to ensure it's just the base URL without any trailing paths
+        const baseUrl = empresa.url_instance.split('/message')[0].replace(/\/$/, '');
+        
+        // Check instance status
+        const statusResponse = await fetch(`${baseUrl}/instance/status/instance1`, {
+          headers: {
+            'apikey': empresa.apikeyevo
+          }
+        });
+
+        const statusData = await statusResponse.json();
+        console.log('Status da conexão:', statusData);
+
+        // Update connection status in database if different
+        if (statusData.status === 'connected' && !isConnected) {
+          await supabase
+            .from('Empresas')
+            .update({ is_connected: true })
+            .eq('id', 8); // TODO: Use dynamic empresa ID
+        } else if (statusData.status !== 'connected' && isConnected) {
+          await supabase
+            .from('Empresas')
+            .update({ is_connected: false })
+            .eq('id', 8); // TODO: Use dynamic empresa ID
+        }
+      } catch (error) {
+        console.error('❌ Erro ao verificar status:', error);
+      }
+    };
+
+    // Check immediately
+    checkConnectionStatus();
+
+    // Then check every 30 seconds
+    const interval = setInterval(checkConnectionStatus, 30000);
+
+    return () => clearInterval(interval);
+  }, [isConnected]);
+
   // Poll for QR code updates every 20 seconds if not connected
   useEffect(() => {
     if (isConnected || !qrCodeUrl) return;
