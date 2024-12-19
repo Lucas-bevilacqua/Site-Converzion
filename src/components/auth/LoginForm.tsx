@@ -23,8 +23,11 @@ export const LoginForm = () => {
       return;
     }
 
-    // Se for um novo usuário, a senha será definida como padrão
-    const success = await handleEmailSignIn(email, senha || "cliente123", 1);
+    // Se não foi fornecida senha, usa a senha padrão
+    const senhaToUse = senha || "cliente123";
+    console.log('Tentando login com senha:', senhaToUse);
+
+    const success = await handleEmailSignIn(email, senhaToUse, 1);
     if (success) {
       console.log('Login bem-sucedido, redirecionando...');
       window.location.href = "/dashboard";
@@ -52,6 +55,9 @@ export const LoginForm = () => {
           onChange={(e) => setSenha(e.target.value)}
           className="w-full"
         />
+        <p className="text-sm text-muted-foreground mt-1">
+          Senha padrão para novos usuários: cliente123
+        </p>
       </div>
 
       <Button
