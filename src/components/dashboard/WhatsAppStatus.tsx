@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, QrCode } from "lucide-react";
+import { Loader2, QrCode, Settings } from "lucide-react";
 import { QRCodeDialog } from "./QRCodeDialog";
 import { ConnectionIndicator } from "./ConnectionIndicator";
+import { useNavigate } from "react-router-dom";
 
 export const WhatsAppStatus = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -13,6 +14,7 @@ export const WhatsAppStatus = () => {
   const [showQRCode, setShowQRCode] = useState(false);
   const [needsSetup, setNeedsSetup] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const checkConnectionStatus = async () => {
     try {
@@ -35,10 +37,15 @@ export const WhatsAppStatus = () => {
         return;
       }
 
-      if (!empresa || !empresa.url_instance || !empresa.apikeyevo) {
+      if (!empresa || !empresa.url_instance || !empresa.apikeyevo || !empresa.instance_name) {
         console.log('❌ Credenciais não configuradas');
         setNeedsSetup(true);
         setIsConnected(false);
+        toast({
+          title: "Configuração necessária",
+          description: "Configure suas credenciais do Evolution nas configurações.",
+          variant: "destructive",
+        });
         return;
       }
 
@@ -116,6 +123,11 @@ export const WhatsAppStatus = () => {
   }, []);
 
   const handleConnect = async () => {
+    if (needsSetup) {
+      navigate('/dashboard/settings');
+      return;
+    }
+
     try {
       setIsLoading(true);
       console.log('🔄 Iniciando processo de conexão...');
@@ -137,7 +149,7 @@ export const WhatsAppStatus = () => {
         .eq('emailempresa', session.user.email)
         .single();
 
-      if (empresaError || !empresa?.url_instance || !empresa?.apikeyevo) {
+      if (empresaError || !empresa?.url_instance || !empresa?.apikeyevo || !empresa?.instance_name) {
         console.error('Erro ao buscar dados da empresa:', empresaError);
         toast({
           variant: "destructive",
@@ -194,10 +206,15 @@ export const WhatsAppStatus = () => {
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Conectando...
             </>
+          ) : needsSetup ? (
+            <>
+              <Settings className="mr-2 h-4 w-4" />
+              Configurar Evolution
+            </>
           ) : (
             <>
               <QrCode className="mr-2 h-4 w-4" />
-              {needsSetup ? 'Configurar WhatsApp' : isConnected ? 'Reconectar' : 'Conectar WhatsApp'}
+              {isConnected ? 'Reconectar' : 'Conectar WhatsApp'}
             </>
           )}
         </Button>

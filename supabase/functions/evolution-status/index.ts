@@ -68,7 +68,7 @@ serve(async (req) => {
       )
     }
 
-    // Clean up the URL
+    // Clean up the URL and instance name
     const baseUrl = empresa.url_instance.split('/message')[0].replace(/\/+$/, '')
     const instanceName = encodeURIComponent(empresa.instance_name.trim())
     
@@ -100,21 +100,10 @@ serve(async (req) => {
     const statusData = await statusResponse.json()
     console.log('✅ Status do Evolution:', statusData)
 
-    // Update connection status in database
-    const isConnected = statusData.state === 'open'
-    const { error: updateError } = await supabaseAdmin
-      .from('Empresas')
-      .update({ is_connected: isConnected })
-      .eq('emailempresa', email)
-
-    if (updateError) {
-      console.error('❌ Erro ao atualizar status:', updateError)
-    }
-
     return new Response(
       JSON.stringify({ 
         success: true, 
-        isConnected,
+        isConnected: statusData.state === 'open',
         state: statusData.state
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
