@@ -26,7 +26,9 @@ export const useAuth = () => {
           password: senha,
           options: {
             data: { empresa_id },
-            emailRedirectTo: window.location.origin + '/login'
+            emailRedirectTo: window.location.origin + '/login',
+            // Desabilita a necessidade de confirmação de email
+            emailConfirmTo: null
           }
         });
 
@@ -44,7 +46,7 @@ export const useAuth = () => {
           console.log('Conta criada com sucesso:', signUpData);
           toast({
             title: "Conta Criada",
-            description: "Sua conta foi criada com sucesso! Por favor, verifique seu email para confirmar o cadastro.",
+            description: "Sua conta foi criada com sucesso! Você será redirecionado para o dashboard.",
           });
           return true;
         }
