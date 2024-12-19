@@ -24,6 +24,8 @@ const Dashboard = () => {
         return;
       }
 
+      console.log('Fetching empresa data for email:', session.user.email);
+      
       // Fetch empresa data
       const { data: empresa, error } = await supabase
         .from('empresas')
@@ -42,6 +44,7 @@ const Dashboard = () => {
       }
 
       if (empresa) {
+        console.log('Empresa data loaded:', { id: empresa.id, hasPrompt: !!empresa.prompt, hasQR: !!empresa.qr_code_url });
         setEmpresaId(empresa.id);
         setPrompt(empresa.prompt || "");
         setQrCodeUrl(empresa.qr_code_url);
@@ -58,18 +61,20 @@ const Dashboard = () => {
 
     const checkStatus = async () => {
       try {
+        console.log('Checking WhatsApp status for empresa:', empresaId);
         const { data, error } = await supabase.functions.invoke('evolution-status', {
           body: { empresaId }
         });
 
         if (error) {
-          console.error('Erro ao verificar status:', error);
+          console.error('Error checking status:', error);
           return;
         }
 
+        console.log('Status update received:', data);
         setIsConnected(data.isConnected);
       } catch (error) {
-        console.error('Erro ao verificar status:', error);
+        console.error('Error checking status:', error);
       }
     };
 
@@ -82,12 +87,13 @@ const Dashboard = () => {
 
     setIsGeneratingQR(true);
     try {
+      console.log('Generating QR code for empresa:', empresaId);
       const { data, error } = await supabase.functions.invoke('evolution-qr', {
         body: { empresaId }
       });
 
       if (error) {
-        console.error('Erro ao gerar QR code:', error);
+        console.error('Error generating QR code:', error);
         toast({
           title: "Erro",
           description: "Não foi possível gerar o QR code",
@@ -96,10 +102,11 @@ const Dashboard = () => {
         return;
       }
 
+      console.log('QR code generated successfully');
       setQrCodeUrl(data.qrcode);
       setIsConnected(false);
     } catch (error) {
-      console.error('Erro ao gerar QR code:', error);
+      console.error('Error generating QR code:', error);
       toast({
         title: "Erro",
         description: "Não foi possível gerar o QR code",
