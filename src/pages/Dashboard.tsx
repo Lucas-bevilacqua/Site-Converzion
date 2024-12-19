@@ -15,6 +15,7 @@ const Dashboard = () => {
   const [empresaId, setEmpresaId] = useState<number | null>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [isGeneratingQR, setIsGeneratingQR] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -51,6 +52,64 @@ const Dashboard = () => {
 
     checkAuth();
   }, [navigate, toast]);
+
+  // Verificar status periodicamente
+  useEffect(() => {
+    if (!empresaId) return;
+
+    const checkStatus = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('evolution-status', {
+          body: { empresaId }
+        });
+
+        if (error) {
+          console.error('Erro ao verificar status:', error);
+          return;
+        }
+
+        setIsConnected(data.isConnected);
+      } catch (error) {
+        console.error('Erro ao verificar status:', error);
+      }
+    };
+
+    const interval = setInterval(checkStatus, 10000); // Verificar a cada 10 segundos
+    return () => clearInterval(interval);
+  }, [empresaId]);
+
+  const handleGenerateQR = async () => {
+    if (!empresaId || isGeneratingQR) return;
+
+    setIsGeneratingQR(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('evolution-qr', {
+        body: { empresaId }
+      });
+
+      if (error) {
+        console.error('Erro ao gerar QR code:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível gerar o QR code",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setQrCodeUrl(data.qrcode);
+      setIsConnected(false);
+    } catch (error) {
+      console.error('Erro ao gerar QR code:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível gerar o QR code",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingQR(false);
+    }
+  };
 
   const handleSavePrompt = async () => {
     if (!empresaId) return;
@@ -97,11 +156,23 @@ const Dashboard = () => {
         {/* QR Code Section */}
         <Card className="p-6 space-y-4">
           <h2 className="text-xl font-semibold text-foreground">Status do WhatsApp</h2>
-          <div className="flex items-center space-x-2">
-            <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-            <span className="text-sm text-muted-foreground">
-              {isConnected ? 'Conectado' : 'Desconectado'}
-            </span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+              <span className="text-sm text-muted-foreground">
+                {isConnected ? 'Conectado' : 'Desconectado'}
+              </span>
+            </div>
+            {!isConnected && (
+              <Button 
+                onClick={handleGenerateQR} 
+                disabled={isGeneratingQR}
+                size="sm"
+              >
+                {isGeneratingQR && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Gerar QR Code
+              </Button>
+            )}
           </div>
           
           {!isConnected && qrCodeUrl && (
