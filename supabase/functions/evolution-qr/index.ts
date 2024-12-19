@@ -36,7 +36,7 @@ serve(async (req) => {
     // Fetch empresa data
     const { data: empresa, error: empresaError } = await supabaseClient
       .from('Empresas')
-      .select('url_instance, apikeyevo')
+      .select('url_instance, apikeyevo, is_connected')
       .eq('id', empresa_id)
       .single()
 
@@ -56,9 +56,41 @@ serve(async (req) => {
       )
     }
 
-    console.log('Making request to Evolution API...')
+    // First check if instance is already connected
+    if (empresa.is_connected) {
+      console.log('Checking instance status...')
+      const statusUrl = `${empresa.url_instance}/status`
+      
+      try {
+        const statusResponse = await fetch(statusUrl, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${empresa.apikeyevo}`
+          }
+        })
+
+        const statusData = await statusResponse.json()
+        
+        if (statusData.status === 'CONNECTED' || statusData.connected) {
+          console.log('Instance is already connected')
+          return new Response(
+            JSON.stringify({ 
+              success: true, 
+              message: 'Instância já está conectada',
+              is_connected: true 
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+      } catch (error) {
+        console.log('Error checking status, will try to generate new QR code:', error)
+      }
+    }
+
+    console.log('Making request to Evolution API for new QR code...')
     
-    // Make request to Evolution API - Fixed URL construction
+    // Instance is not connected, generate new QR code
     const evolutionUrl = `${empresa.url_instance}/start-session`
     console.log('Evolution API URL:', evolutionUrl)
     
