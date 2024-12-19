@@ -4,6 +4,8 @@ import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
+import { ConnectionStatus } from "./ConnectionStatus";
+import { QRCodeDisplay } from "./QRCodeDisplay";
 
 interface WhatsAppStatusProps {
   isConnected: boolean;
@@ -54,16 +56,14 @@ export const WhatsAppStatus = ({
     }
   };
 
-  // Poll for connection status every 30 seconds
   useEffect(() => {
     const checkConnectionStatus = async () => {
       try {
         console.log('🔄 Verificando status de conexão...');
         
-        // First get the empresa data to get the instance URL
         const { data: empresa, error: empresaError } = await supabase
           .from('Empresas')
-          .select('url_instance, apikeyevo, telefoneempresa')
+          .select('url_instance, apikeyevo, instance_name')
           .eq('id', 8) // TODO: Use dynamic empresa ID
           .single();
 
@@ -72,28 +72,24 @@ export const WhatsAppStatus = ({
           return;
         }
 
-        if (!empresa.telefoneempresa) {
-          console.log('Telefone da empresa não configurado');
+        if (!empresa.instance_name) {
+          console.log('Nome da instância não configurado');
           return;
         }
 
-        // Clean up the URL to ensure it's just the base URL without any trailing paths
         const baseUrl = empresa.url_instance.split('/message')[0].replace(/\/$/, '');
-        const instanceName = empresa.telefoneempresa.replace(/\D/g, '');
         
-        console.log('Verificando status para instância:', instanceName);
+        console.log('Verificando status para instância:', empresa.instance_name);
         
-        // Check instance status using the correct endpoint
-        const statusResponse = await fetch(`${baseUrl}/instance/connectionState/${instanceName}`, {
+        const statusResponse = await fetch(`${baseUrl}/instance/connectionState/${empresa.instance_name}`, {
           headers: {
             'apikey': empresa.apikeyevo
           }
         });
 
-        // If instance doesn't exist, try to create it
         if (statusResponse.status === 404) {
           console.log('⚠️ Instância não encontrada, tentando criar...');
-          const created = await createInstance(baseUrl, instanceName, empresa.apikeyevo);
+          const created = await createInstance(baseUrl, empresa.instance_name, empresa.apikeyevo);
           if (!created) return;
         } else if (!statusResponse.ok) {
           console.error('Erro ao verificar status:', await statusResponse.text());
@@ -103,7 +99,6 @@ export const WhatsAppStatus = ({
         const statusData = await statusResponse.json();
         console.log('Status da conexão:', statusData);
 
-        // Update connection status in database if different
         const isNowConnected = statusData.state === 'open';
         if (isNowConnected !== isConnected) {
           console.log(`Atualizando status de conexão para: ${isNowConnected}`);
@@ -117,16 +112,11 @@ export const WhatsAppStatus = ({
       }
     };
 
-    // Check immediately
     checkConnectionStatus();
-
-    // Then check every 30 seconds
     const interval = setInterval(checkConnectionStatus, 30000);
-
     return () => clearInterval(interval);
   }, [isConnected]);
 
-  // Poll for QR code updates every 20 seconds if not connected
   useEffect(() => {
     if (isConnected || !qrCodeUrl) return;
 
@@ -155,10 +145,9 @@ export const WhatsAppStatus = ({
 
       console.log('Iniciando geração do QR code...');
       
-      // First get the empresa data to get the instance URL
       const { data: empresa, error: empresaError } = await supabase
         .from('Empresas')
-        .select('url_instance')
+        .select('url_instance, instance_name')
         .eq('id', 8) // TODO: Use dynamic empresa ID
         .single();
 
@@ -172,7 +161,15 @@ export const WhatsAppStatus = ({
         return;
       }
 
-      // Clean up the URL to ensure it's just the base URL without any trailing paths
+      if (!empresa.instance_name) {
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Nome da instância não configurado. Configure o nome da instância nas configurações."
+        });
+        return;
+      }
+
       const baseUrl = empresa.url_instance.split('/message')[0].replace(/\/$/, '');
       console.log('URL base da instância:', baseUrl);
       
@@ -195,7 +192,6 @@ export const WhatsAppStatus = ({
       console.error('Error generating QR code:', error);
       let errorMessage = "Não foi possível gerar o QR code";
       
-      // If we have details from the API response, show them
       if (error.details) {
         errorMessage += `: ${error.details}`;
       }
@@ -212,12 +208,7 @@ export const WhatsAppStatus = ({
     <Card className="bg-[#1A1F2C] border-gray-700 p-6 space-y-4">
       <h2 className="text-xl font-semibold text-white">Status do WhatsApp</h2>
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-          <span className="text-sm text-gray-300">
-            {isConnected ? 'Conectado' : 'Desconectado'}
-          </span>
-        </div>
+        <ConnectionStatus isConnected={isConnected} />
         {!isConnected && (
           <Button 
             onClick={handleGenerateQR}
@@ -237,26 +228,7 @@ export const WhatsAppStatus = ({
         </p>
       )}
       
-      {!isConnected && qrCodeUrl && (
-        <div className="space-y-4">
-          <p className="text-sm text-gray-400">
-            Escaneie o QR Code abaixo com seu WhatsApp para conectar:
-          </p>
-          <div className="flex justify-center">
-            <img 
-              src={qrCodeUrl} 
-              alt="QR Code WhatsApp" 
-              className="max-w-[300px] h-auto"
-            />
-          </div>
-        </div>
-      )}
-
-      {!isConnected && !qrCodeUrl && isGeneratingQR && (
-        <div className="flex justify-center items-center p-4">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-        </div>
-      )}
+      <QRCodeDisplay qrCodeUrl={qrCodeUrl} isGeneratingQR={isGeneratingQR} />
     </Card>
   );
 };

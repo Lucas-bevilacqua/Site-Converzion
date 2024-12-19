@@ -25,7 +25,6 @@ serve(async (req) => {
       )
     }
 
-    // Get the API key from the database for this empresa
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     
@@ -37,7 +36,7 @@ serve(async (req) => {
     
     const { data: empresa, error: empresaError } = await supabaseClient
       .from('Empresas')
-      .select('apikeyevo')
+      .select('apikeyevo, instance_name')
       .eq('id', empresa_id)
       .single()
 
@@ -46,11 +45,14 @@ serve(async (req) => {
       throw new Error('API key not found for empresa')
     }
 
-    // Clean up the URL to ensure it's just the base URL without any trailing paths
+    if (!empresa.instance_name) {
+      console.error('Instance name not found for empresa')
+      throw new Error('Instance name not found for empresa')
+    }
+
     const baseUrl = instance_url.split('/message')[0].replace(/\/$/, '')
     console.log('URL base da instância:', baseUrl)
     
-    // Create instance with updated parameters according to v2.2 docs
     console.log('🔄 Criando nova instância...')
     const createInstanceResponse = await fetch(`${baseUrl}/instance/create`, {
       method: 'POST',
@@ -59,7 +61,7 @@ serve(async (req) => {
         'apikey': empresa.apikeyevo
       },
       body: JSON.stringify({
-        instanceName: "instance1",
+        instanceName: empresa.instance_name,
         qrcode: true,
         integration: "WHATSAPP-BAILEYS",
         token: empresa.apikeyevo
@@ -76,9 +78,8 @@ serve(async (req) => {
 
     console.log('✅ Instância criada:', createData)
 
-    // Connect instance to get QR code
     console.log('🔄 Conectando instância para gerar QR code...')
-    const connectResponse = await fetch(`${baseUrl}/instance/connect/instance1`, {
+    const connectResponse = await fetch(`${baseUrl}/instance/connect/${empresa.instance_name}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
