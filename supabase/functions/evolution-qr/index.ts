@@ -59,7 +59,7 @@ serve(async (req) => {
     // First check if instance is already connected
     if (empresa.is_connected) {
       console.log('Checking instance status...')
-      const statusUrl = `${empresa.url_instance}/status`
+      const statusUrl = `${empresa.url_instance}/instance/connectionState`
       
       try {
         const statusResponse = await fetch(statusUrl, {
@@ -71,8 +71,9 @@ serve(async (req) => {
         })
 
         const statusData = await statusResponse.json()
+        console.log('Status response:', statusData)
         
-        if (statusData.status === 'CONNECTED' || statusData.connected) {
+        if (statusData.state === 'open' || statusData.state === 'connected') {
           console.log('Instance is already connected')
           return new Response(
             JSON.stringify({ 
@@ -91,11 +92,11 @@ serve(async (req) => {
     console.log('Making request to Evolution API for new QR code...')
     
     // Instance is not connected, generate new QR code
-    const evolutionUrl = `${empresa.url_instance}/start-session`
+    const evolutionUrl = `${empresa.url_instance}/instance/connect`
     console.log('Evolution API URL:', evolutionUrl)
     
     const evolutionResponse = await fetch(evolutionUrl, {
-      method: 'POST',
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${empresa.apikeyevo}`
@@ -120,7 +121,7 @@ serve(async (req) => {
       )
     }
 
-    if (!evolutionResponse.ok || !qrData.qrcode) {
+    if (!evolutionResponse.ok || !qrData.code) {
       console.error('Error or missing QR code in Evolution API response:', qrData)
       return new Response(
         JSON.stringify({ 
@@ -137,7 +138,7 @@ serve(async (req) => {
     const { error: updateError } = await supabaseClient
       .from('Empresas')
       .update({ 
-        qr_code_url: qrData.qrcode,
+        qr_code_url: qrData.code,
         is_connected: false
       })
       .eq('id', empresa_id)
@@ -153,7 +154,7 @@ serve(async (req) => {
     console.log('Successfully updated empresa with QR code')
     
     return new Response(
-      JSON.stringify({ success: true, qr_code: qrData.qrcode }),
+      JSON.stringify({ success: true, qr_code: qrData.code }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
