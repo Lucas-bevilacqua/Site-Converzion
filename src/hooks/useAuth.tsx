@@ -13,14 +13,24 @@ export const useAuth = () => {
     console.log('📧 Email:', email);
 
     try {
-      // Tenta recriar empresa se ela foi perdida
-      await recreateEmpresa(email, senha);
-
       // Primeiro tenta fazer login
       const { success: signInSuccess, error: signInError } = await signInUser(email, senha);
       
       if (signInSuccess) {
         console.log('✅ Login bem-sucedido!');
+        
+        // Verifica se existe empresa
+        const { data: empresa } = await supabase
+          .from('Empresas')
+          .select()
+          .eq('emailempresa', email)
+          .maybeSingle();
+        
+        if (!empresa) {
+          console.log('⚠️ Empresa não encontrada, recriando...');
+          await recreateEmpresa(email, senha);
+        }
+        
         toast({
           title: "Bem-vindo de volta!",
           description: "Login realizado com sucesso.",
@@ -31,7 +41,6 @@ export const useAuth = () => {
       // Se o login falhar, tenta criar uma nova conta
       console.log('🆕 Tentando criar nova conta...');
       
-      // Tenta criar nova conta
       const { success: signUpSuccess, error: signUpError } = await signUpUser(email, senha, empresa_id);
       
       if (!signUpSuccess) {
@@ -43,7 +52,8 @@ export const useAuth = () => {
         return false;
       }
 
-      // Cria nova empresa apenas se não existir
+      // Cria nova empresa
+      console.log('📝 Criando nova empresa...');
       const { error: createEmpresaError } = await createEmpresa({
         id: empresa_id,
         emailempresa: email,

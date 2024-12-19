@@ -76,10 +76,24 @@ export const WhatsAppStatus = () => {
         .from('Empresas')
         .select('url_instance, instance_name, apikeyevo, is_connected')
         .eq('emailempresa', session.user.email)
-        .single();
+        .maybeSingle();
 
-      if (empresaError || !empresa?.url_instance || !empresa?.apikeyevo) {
-        console.error('Erro ao buscar dados da empresa:', empresaError);
+      if (empresaError) {
+        console.error('❌ Erro ao buscar dados da empresa:', empresaError);
+        setNeedsSetup(true);
+        setIsConnected(false);
+        return;
+      }
+
+      if (!empresa) {
+        console.log('⚠️ Empresa não encontrada');
+        setNeedsSetup(true);
+        setIsConnected(false);
+        return;
+      }
+
+      if (!empresa.url_instance || !empresa.apikeyevo) {
+        console.log('⚠️ Credenciais da Evolution não configuradas');
         setNeedsSetup(true);
         setIsConnected(false);
         return;
