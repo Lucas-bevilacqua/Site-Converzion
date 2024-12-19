@@ -11,83 +11,31 @@ export const useAuth = () => {
     console.log('Iniciando processo de autenticação para:', email);
 
     try {
-      // First, try to sign in
-      console.log('Tentando fazer login...');
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password: senha,
-      });
+      // Primeiro, verifica se já existe uma empresa com este email
+      const { data: empresaExistente } = await supabase
+        .from('Empresas')
+        .select('*')
+        .eq('emailempresa', email)
+        .single();
 
-      if (signInError) {
-        console.log('Login falhou, verificando se precisa criar conta:', signInError);
-        
-        if (signInError.message.includes('Invalid login credentials')) {
-          // User doesn't exist, let's create one
-          console.log('Criando nova conta...');
-          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-            email,
-            password: senha,
-            options: {
-              data: {
-                empresa_id,
-              },
-            },
-          });
+      if (empresaExistente) {
+        console.log('Empresa encontrada, tentando fazer login');
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password: senha,
+        });
 
-          if (signUpError) {
-            console.error('Erro ao criar conta:', signUpError);
-            toast({
-              title: "Erro no Cadastro",
-              description: "Não foi possível criar sua conta. Por favor, tente novamente.",
-              variant: "destructive",
-            });
-            return false;
-          }
-
-          if (signUpData.user) {
-            // Create empresa record
-            const { error: createEmpresaError } = await supabase
-              .from('Empresas')
-              .insert([
-                {
-                  id: empresa_id,
-                  emailempresa: email,
-                  senha: senha,
-                  NomeEmpresa: 'Nova Empresa'
-                }
-              ]);
-
-            if (createEmpresaError) {
-              console.error('Erro ao criar empresa:', createEmpresaError);
-              // Cleanup: remove auth user if empresa creation fails
-              await supabase.auth.admin.deleteUser(signUpData.user.id);
-              toast({
-                title: "Erro ao Criar Empresa",
-                description: "Ocorreu um erro ao criar sua empresa. Por favor, tente novamente.",
-                variant: "destructive",
-              });
-              return false;
-            }
-
-            toast({
-              title: "Conta Criada",
-              description: "Sua conta foi criada com sucesso! Você receberá um email de confirmação.",
-            });
-            return true;
-          }
-        } else {
-          console.error('Erro de autenticação:', signInError);
+        if (signInError) {
+          console.error('Erro ao fazer login:', signInError);
           toast({
             title: "Erro no Login",
-            description: signInError.message,
+            description: "Email ou senha incorretos.",
             variant: "destructive",
           });
           return false;
         }
-      }
 
-      if (signInData.user) {
-        console.log('Login bem-sucedido:', signInData.user.email);
+        console.log('Login bem-sucedido!');
         toast({
           title: "Login Realizado",
           description: "Bem-vindo de volta!",
@@ -95,7 +43,56 @@ export const useAuth = () => {
         return true;
       }
 
-      return false;
+      // Se não existe, cria uma nova conta
+      console.log('Empresa não encontrada, criando nova conta');
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password: senha,
+      });
+
+      if (signUpError) {
+        console.error('Erro ao criar conta:', signUpError);
+        toast({
+          title: "Erro no Cadastro",
+          description: "Não foi possível criar sua conta. Por favor, tente novamente.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      // Cria o registro da empresa
+      const { error: createEmpresaError } = await supabase
+        .from('Empresas')
+        .insert([
+          {
+            id: empresa_id,
+            emailempresa: email,
+            senha: senha,
+            NomeEmpresa: 'Nova Empresa'
+          }
+        ]);
+
+      if (createEmpresaError) {
+        console.error('Erro ao criar empresa:', createEmpresaError);
+        // Se falhar ao criar a empresa, remove o usuário criado
+        if (signUpData.user) {
+          await supabase.auth.admin.deleteUser(signUpData.user.id);
+        }
+        toast({
+          title: "Erro ao Criar Empresa",
+          description: "Ocorreu um erro ao criar sua empresa. Por favor, tente novamente.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      console.log('Conta e empresa criadas com sucesso!');
+      toast({
+        title: "Conta Criada",
+        description: "Sua conta foi criada com sucesso!",
+      });
+      return true;
+
     } catch (error) {
       console.error('Erro inesperado:', error);
       toast({

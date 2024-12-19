@@ -23,36 +23,10 @@ export const LoginForm = () => {
       return;
     }
 
-    try {
-      console.log('Tentando autenticar usuário...');
-      const success = await handleEmailSignIn(email, senha, 1);
-      
-      if (success) {
-        console.log('Login bem-sucedido, redirecionando...');
-        toast({
-          title: "Login bem-sucedido",
-          description: "Você será redirecionado para o dashboard.",
-        });
-        window.location.href = "/dashboard";
-      }
-    } catch (error: any) {
-      console.error('Erro durante o login:', error);
-      
-      let errorMessage = "Ocorreu um erro durante o login. Por favor, tente novamente.";
-      
-      if (error.message?.includes('Invalid login credentials')) {
-        errorMessage = "Email ou senha incorretos. Se você não possui uma conta, uma será criada automaticamente.";
-      } else if (error.message?.includes('Email not confirmed')) {
-        errorMessage = "Por favor, confirme seu email antes de fazer login.";
-      } else if (error.message?.includes('Email logins are disabled')) {
-        errorMessage = "Login por email está desabilitado. Por favor, contate o suporte.";
-      }
-      
-      toast({
-        title: "Erro no login",
-        description: errorMessage,
-        variant: "destructive",
-      });
+    const success = await handleEmailSignIn(email, senha, 1);
+    if (success) {
+      console.log('Login bem-sucedido, redirecionando...');
+      window.location.href = "/dashboard";
     }
   };
 
