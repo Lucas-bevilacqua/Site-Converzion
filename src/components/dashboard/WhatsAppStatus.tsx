@@ -3,12 +3,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, QrCode } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { QRCodeDialog } from "./QRCodeDialog";
+import { ConnectionIndicator } from "./ConnectionIndicator";
 
 export const WhatsAppStatus = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -50,7 +46,6 @@ export const WhatsAppStatus = () => {
       console.log('🔗 URL da instância:', empresa.url_instance);
       console.log('🔌 Status atual:', empresa.is_connected ? 'Conectado' : 'Desconectado');
 
-      // Primeiro atualiza o estado com o valor do banco
       setIsConnected(empresa.is_connected || false);
 
       try {
@@ -62,17 +57,14 @@ export const WhatsAppStatus = () => {
           console.error('❌ Erro ao verificar status:', error);
           
           try {
-            // Tenta parsear o corpo da resposta que contém os detalhes do erro
             const errorBody = JSON.parse(error.body || '{}');
             
-            // Verifica se o erro indica que precisa de configuração
             if (errorBody?.error === 'Credenciais do Evolution não configuradas' || 
                 errorBody?.needsSetup === true) {
               console.log('⚙️ Evolution precisa ser configurado');
               setNeedsSetup(true);
               setIsConnected(false);
               
-              // Atualiza o status no banco
               const { error: updateError } = await supabase
                 .from('Empresas')
                 .update({ is_connected: false })
@@ -89,12 +81,9 @@ export const WhatsAppStatus = () => {
         }
 
         console.log('✅ Status da conexão:', data);
-        
-        // Atualiza o estado com o valor mais recente da API
         setIsConnected(data.isConnected);
         setNeedsSetup(data.needsSetup || false);
 
-        // Atualiza o status no banco de dados se for diferente
         if (empresa.is_connected !== data.isConnected) {
           console.log('🔄 Atualizando status no banco:', data.isConnected);
           const { error: updateError } = await supabase
@@ -108,7 +97,6 @@ export const WhatsAppStatus = () => {
         }
       } catch (error) {
         console.error('❌ Erro ao verificar status na API:', error);
-        // Se houver erro na API, mantemos o status do banco
       }
 
     } catch (error) {
@@ -123,7 +111,6 @@ export const WhatsAppStatus = () => {
 
   useEffect(() => {
     checkConnectionStatus();
-    // Verificar status a cada 30 segundos
     const interval = setInterval(checkConnectionStatus, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -196,8 +183,7 @@ export const WhatsAppStatus = () => {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4">
-        <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-        <span>{isConnected ? 'Conectado' : needsSetup ? 'Não configurado' : 'Desconectado'}</span>
+        <ConnectionIndicator isConnected={isConnected} needsSetup={needsSetup} />
         <Button
           onClick={handleConnect}
           disabled={isLoading}
@@ -217,24 +203,12 @@ export const WhatsAppStatus = () => {
         </Button>
       </div>
 
-      <Dialog open={showQRCode} onOpenChange={setShowQRCode}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {needsSetup ? 'Configurar WhatsApp' : 'Conectar WhatsApp'}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex items-center justify-center p-6">
-            {qrCode && (
-              <img
-                src={qrCode}
-                alt="QR Code para conexão do WhatsApp"
-                className="w-64 h-64"
-              />
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <QRCodeDialog
+        showQRCode={showQRCode}
+        setShowQRCode={setShowQRCode}
+        qrCode={qrCode}
+        needsSetup={needsSetup}
+      />
     </div>
   );
 };
