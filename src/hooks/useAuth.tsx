@@ -11,25 +11,13 @@ export const useAuth = () => {
     console.log('Iniciando processo de autenticação para:', email);
 
     try {
-      // First try to sign in
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password: senha,
-      });
+      // First check if user exists
+      const { data: { users }, error: getUserError } = await supabase.auth.admin.listUsers();
+      const existingUser = users?.find(user => user.email === email);
+      console.log('Verificando usuário existente:', existingUser);
 
-      if (signInError) {
-        console.log('Erro no login, verificando se usuário existe:', signInError);
-        
-        if (signInError.message.includes('Email not confirmed')) {
-          toast({
-            title: "Email não confirmado",
-            description: "Por favor, confirme seu email antes de fazer login. Verifique sua caixa de entrada e spam.",
-            variant: "destructive",
-          });
-          return false;
-        }
-
-        // If login fails, try to create a new account
+      if (!existingUser) {
+        console.log('Usuário não encontrado, tentando criar conta...');
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password: senha,
@@ -40,19 +28,19 @@ export const useAuth = () => {
         });
 
         if (signUpError) {
-          console.error('Erro ao criar conta:', signUpError);
+          console.error('Erro ao criar usuário:', signUpError);
           toast({
             title: "Erro no Cadastro",
-            description: signUpError.message,
+            description: "Não foi possível criar sua conta. Por favor, tente novamente.",
             variant: "destructive",
           });
           return false;
         }
 
         if (signUpData.user) {
-          console.log('Conta criada com sucesso:', signUpData);
+          console.log('Usuário criado com sucesso:', signUpData);
           
-          // Try to resend confirmation email
+          // Immediately try to resend confirmation email
           const { error: resendError } = await supabase.auth.resend({
             type: 'signup',
             email: email,
@@ -65,20 +53,57 @@ export const useAuth = () => {
           }
 
           toast({
-            title: "Conta Criada",
+            title: "Verifique seu Email",
             description: "Um email de confirmação foi enviado para " + email + ". Por favor, verifique também sua pasta de spam.",
           });
           return false;
         }
-      }
-
-      if (signInData.user) {
-        console.log('Login realizado com sucesso:', signInData);
-        toast({
-          title: "Sucesso",
-          description: "Login realizado com sucesso",
+      } else {
+        // User exists, try to sign in
+        console.log('Usuário existe, tentando fazer login...');
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password: senha,
         });
-        return true;
+
+        if (signInError) {
+          console.error('Erro ao fazer login:', signInError);
+          if (signInError.message.includes('Email not confirmed')) {
+            // Try to resend confirmation email
+            const { error: resendError } = await supabase.auth.resend({
+              type: 'signup',
+              email: email,
+            });
+
+            if (resendError) {
+              console.error('Erro ao reenviar email de confirmação:', resendError);
+            } else {
+              console.log('Email de confirmação reenviado');
+            }
+
+            toast({
+              title: "Email não Confirmado",
+              description: "Por favor confirme seu email antes de fazer login. Um novo email de confirmação foi enviado. Verifique sua caixa de entrada e spam.",
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Erro no Login",
+              description: "Credenciais inválidas. Por favor, verifique seu email e senha.",
+              variant: "destructive",
+            });
+          }
+          return false;
+        }
+
+        if (signInData.user) {
+          console.log('Login realizado com sucesso:', signInData);
+          toast({
+            title: "Sucesso",
+            description: "Login realizado com sucesso",
+          });
+          return true;
+        }
       }
 
       return false;
