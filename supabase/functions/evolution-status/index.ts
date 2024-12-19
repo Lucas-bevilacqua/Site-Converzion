@@ -45,22 +45,45 @@ serve(async (req) => {
       .from('Empresas')
       .select('url_instance, instance_name, apikeyevo')
       .eq('emailempresa', email)
-      .single()
+      .maybeSingle()
 
-    if (empresaError || !empresa) {
+    if (empresaError) {
       console.error('❌ Erro ao buscar empresa:', empresaError)
       return new Response(
-        JSON.stringify({ error: 'Empresa não encontrada' }),
+        JSON.stringify({ error: 'Erro ao buscar empresa', details: empresaError }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      )
+    }
+
+    if (!empresa) {
+      console.log('❌ Empresa não encontrada')
+      return new Response(
+        JSON.stringify({ 
+          error: 'Empresa não encontrada',
+          needsSetup: true 
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
       )
     }
 
+    // Log the empresa data for debugging
+    console.log('📊 Dados da empresa encontrados:', {
+      url_instance: empresa.url_instance,
+      instance_name: empresa.instance_name,
+      hasApiKey: !!empresa.apikeyevo
+    })
+
     if (!empresa.url_instance || !empresa.apikeyevo || !empresa.instance_name) {
-      console.error('❌ Credenciais da Evolution incompletas')
+      console.log('❌ Credenciais da Evolution incompletas')
       return new Response(
         JSON.stringify({ 
           error: 'Credenciais do Evolution não configuradas',
-          needsSetup: true 
+          needsSetup: true,
+          details: {
+            hasUrl: !!empresa.url_instance,
+            hasApiKey: !!empresa.apikeyevo,
+            hasInstanceName: !!empresa.instance_name
+          }
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
