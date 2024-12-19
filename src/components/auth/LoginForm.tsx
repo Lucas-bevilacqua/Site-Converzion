@@ -34,21 +34,7 @@ export const LoginForm = () => {
       
       if (success) {
         console.log('🎉 Login/cadastro bem-sucedido');
-        
-        // Verifica a sessão atual
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error('❌ Erro ao verificar sessão:', sessionError);
-          throw sessionError;
-        }
-
-        if (!session) {
-          console.error('❌ Sessão não encontrada após login');
-          throw new Error('Sessão não encontrada após login');
-        }
-
-        console.log('✅ Sessão verificada, redirecionando...');
+        console.log('✅ Redirecionando para dashboard...');
         window.location.href = "/dashboard";
       } else {
         console.log('❌ Login/cadastro falhou');
