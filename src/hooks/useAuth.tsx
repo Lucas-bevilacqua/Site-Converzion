@@ -8,20 +8,34 @@ export const useAuth = () => {
 
   const handleEmailSignIn = async (email: string, senha: string, empresa_id: number) => {
     setLoading(true);
-    console.log('🔐 Iniciando processo de autenticação');
+    console.log('🔐 Iniciando processo de autenticação/cadastro');
     console.log('📧 Email:', email);
-    console.log('🔑 Senha fornecida:', senha);
 
     try {
-      // Primeiro, tenta fazer login diretamente
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password: senha,
-      });
+      // Primeiro, verifica se já existe uma empresa com este email
+      const { data: empresaExistente } = await supabase
+        .from('Empresas')
+        .select('*')
+        .eq('emailempresa', email)
+        .single();
 
-      console.log('🔓 Tentativa de login direto:', { signInData, signInError });
+      if (empresaExistente) {
+        console.log('🏢 Empresa já existe, tentando fazer login');
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password: senha,
+        });
 
-      if (!signInError) {
+        if (signInError) {
+          console.log('❌ Login falhou, use a senha padrão');
+          toast({
+            title: "Erro no Login",
+            description: "Use a senha: default123",
+            variant: "destructive",
+          });
+          return false;
+        }
+
         console.log('✅ Login bem-sucedido!');
         toast({
           title: "Login Realizado",
@@ -30,31 +44,11 @@ export const useAuth = () => {
         return true;
       }
 
-      // Se o login falhou, verifica se a empresa existe
-      const { data: empresaExistente, error: empresaError } = await supabase
-        .from('Empresas')
-        .select('*')
-        .eq('emailempresa', email)
-        .single();
-
-      console.log('🏢 Busca por empresa:', { empresaExistente, empresaError });
-
-      if (empresaExistente) {
-        // Se a empresa existe mas o login falhou, provavelmente está usando senha errada
-        console.log('❌ Empresa existe mas credenciais inválidas');
-        toast({
-          title: "Erro no Login",
-          description: "Credenciais inválidas. Use a senha: default123",
-          variant: "destructive",
-        });
-        return false;
-      }
-
-      // Se chegou aqui, é um novo usuário - vamos criar conta
-      console.log('📝 Criando nova conta');
+      // Se não existe, cria uma nova conta
+      console.log('📝 Criando nova conta e empresa');
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
-        password: "default123",
+        password: senha,
         options: {
           data: {
             empresa_id: empresa_id,
@@ -62,13 +56,11 @@ export const useAuth = () => {
         }
       });
 
-      console.log('👤 Resultado do cadastro:', { signUpData, signUpError });
-
       if (signUpError) {
         console.error('❌ Erro ao criar conta:', signUpError);
         toast({
           title: "Erro no Cadastro",
-          description: `Não foi possível criar sua conta: ${signUpError.message}`,
+          description: "Não foi possível criar sua conta. Tente novamente.",
           variant: "destructive",
         });
         return false;
@@ -81,22 +73,19 @@ export const useAuth = () => {
           {
             id: empresa_id,
             emailempresa: email,
-            senha: "default123",
+            senha: senha,
             NomeEmpresa: 'Nova Empresa'
           }
         ]);
 
-      console.log('🏢 Resultado da criação da empresa:', { createEmpresaError });
-
       if (createEmpresaError) {
         console.error('❌ Erro ao criar empresa:', createEmpresaError);
-        // Se falhar ao criar a empresa, remove o usuário criado
         if (signUpData.user) {
           await supabase.auth.admin.deleteUser(signUpData.user.id);
         }
         toast({
           title: "Erro ao Criar Empresa",
-          description: `Ocorreu um erro ao criar sua empresa: ${createEmpresaError.message}`,
+          description: "Ocorreu um erro ao criar sua empresa. Tente novamente.",
           variant: "destructive",
         });
         return false;
@@ -104,8 +93,8 @@ export const useAuth = () => {
 
       console.log('🎉 Conta e empresa criadas com sucesso!');
       toast({
-        title: "Conta Criada",
-        description: "Sua conta foi criada com sucesso! Sua senha é: default123",
+        title: "Cadastro Realizado",
+        description: "Sua conta foi criada com sucesso!",
       });
       return true;
 
@@ -113,7 +102,7 @@ export const useAuth = () => {
       console.error('❌ Erro inesperado:', error);
       toast({
         title: "Erro",
-        description: "Ocorreu um erro inesperado. Por favor, tente novamente.",
+        description: "Ocorreu um erro inesperado. Tente novamente.",
         variant: "destructive",
       });
       return false;

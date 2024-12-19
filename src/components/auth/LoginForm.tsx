@@ -6,7 +6,6 @@ import { useToast } from "@/hooks/use-toast";
 
 export const LoginForm = () => {
   const [email, setEmail] = useState("");
-  const [senha, setSenha] = useState("default123"); // Inicializa com a senha padrão correta
   const { loading, handleEmailSignIn } = useAuth();
   const { toast } = useToast();
 
@@ -14,7 +13,6 @@ export const LoginForm = () => {
     e.preventDefault();
     console.log('📝 Iniciando submissão do formulário');
     console.log('📧 Email:', email);
-    console.log('🔑 Senha:', senha);
     
     if (!email) {
       console.log('❌ Email não fornecido');
@@ -26,14 +24,14 @@ export const LoginForm = () => {
       return;
     }
 
-    console.log('✨ Tentando login com as credenciais fornecidas');
-    const success = await handleEmailSignIn(email, senha, 1);
+    console.log('✨ Tentando login/cadastro com o email fornecido');
+    const success = await handleEmailSignIn(email, "default123", 1);
     
     if (success) {
-      console.log('🎉 Login bem-sucedido, redirecionando...');
+      console.log('🎉 Login/cadastro bem-sucedido, redirecionando...');
       window.location.href = "/dashboard";
     } else {
-      console.log('❌ Login falhou');
+      console.log('❌ Login/cadastro falhou');
     }
   };
 
@@ -50,25 +48,16 @@ export const LoginForm = () => {
         />
       </div>
 
-      <div>
-        <Input
-          type="password"
-          placeholder="Sua senha (opcional para novo cadastro)"
-          value={senha}
-          onChange={(e) => setSenha(e.target.value)}
-          className="w-full"
-        />
-        <p className="text-sm text-muted-foreground mt-1">
-          Senha padrão pré-preenchida: default123
-        </p>
-      </div>
+      <p className="text-sm text-muted-foreground mt-1">
+        A senha padrão é: default123
+      </p>
 
       <Button
         type="submit"
         className="w-full"
         disabled={loading}
       >
-        {loading ? "Entrando..." : "Entrar"}
+        {loading ? "Processando..." : "Entrar / Cadastrar"}
       </Button>
     </form>
   );
