@@ -11,83 +11,73 @@ export const useAuth = () => {
     console.log('Iniciando processo de autenticação para:', email);
 
     try {
-      // Primeiro, tentar fazer login
-      console.log('Tentando fazer login...');
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password: senha,
-      });
+      // Primeiro, verificar se o usuário já existe
+      const { data: { users }, error: getUserError } = await supabase.auth.admin.listUsers();
+      const userExists = users?.some(user => user.email === email);
 
-      // Se o login for bem-sucedido
-      if (signInData?.user) {
-        console.log('Login realizado com sucesso:', signInData);
-        toast({
-          title: "Sucesso",
-          description: "Login realizado com sucesso!",
+      if (userExists) {
+        // Se o usuário existe, tenta fazer login
+        console.log('Usuário existente, tentando fazer login...');
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password: senha,
         });
-        return true;
-      }
 
-      // Se houver erro no login
-      if (signInError) {
-        console.log('Erro no login:', signInError);
-        
-        // Se o erro for de credenciais inválidas, tentar criar conta
-        if (signInError.message.includes('Invalid login credentials')) {
-          console.log('Credenciais inválidas, tentando criar conta...');
-          
-          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-            email,
-            password: senha,
-            options: {
-              data: { empresa_id },
-              emailRedirectTo: 'https://preview--engage-convert-ai.lovable.app/login'
-            }
+        if (signInError) {
+          console.error('Erro no login:', signInError);
+          toast({
+            title: "Erro no Login",
+            description: "Senha incorreta. Por favor, tente novamente.",
+            variant: "destructive",
           });
+          return false;
+        }
 
-          if (signUpError) {
-            console.error('Erro ao criar conta:', signUpError);
-            let errorMessage = signUpError.message;
-            
-            // Tratamento específico para erros comuns
-            if (errorMessage.includes('Password should be at least 6 characters')) {
-              errorMessage = "A senha deve ter pelo menos 6 caracteres.";
-            } else if (errorMessage.includes('User already registered')) {
-              errorMessage = "Este email já está registrado. Por favor, tente fazer login.";
-            }
-            
-            toast({
-              title: "Erro no Cadastro",
-              description: errorMessage,
-              variant: "destructive",
-            });
-            return false;
+        if (signInData?.user) {
+          console.log('Login realizado com sucesso:', signInData);
+          toast({
+            title: "Sucesso",
+            description: "Login realizado com sucesso!",
+          });
+          return true;
+        }
+      } else {
+        // Se o usuário não existe, tenta criar uma nova conta
+        console.log('Usuário não encontrado, criando nova conta...');
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password: senha,
+          options: {
+            data: { empresa_id },
+            emailRedirectTo: 'https://preview--engage-convert-ai.lovable.app/login'
           }
+        });
 
-          if (signUpData?.user) {
-            console.log('Conta criada com sucesso:', signUpData);
-            toast({
-              title: "Conta Criada",
-              description: "Sua conta foi criada com sucesso! Por favor, verifique seu email para confirmar o cadastro.",
-            });
-            return true;
-          }
-        } else {
-          // Outros erros de login
-          console.error('Erro não relacionado a credenciais:', signInError);
-          let errorMessage = signInError.message;
+        if (signUpError) {
+          console.error('Erro ao criar conta:', signUpError);
+          let errorMessage = "Ocorreu um erro ao criar sua conta.";
           
-          // Tratamento específico para erros comuns
-          if (errorMessage.includes('Email not confirmed')) {
-            errorMessage = "Por favor, confirme seu email antes de fazer login.";
+          if (signUpError.message.includes('Password should be at least 6 characters')) {
+            errorMessage = "A senha deve ter pelo menos 6 caracteres.";
+          } else if (signUpError.message.includes('User already registered')) {
+            errorMessage = "Este email já está registrado. Por favor, tente fazer login.";
           }
           
           toast({
-            title: "Erro no Login",
+            title: "Erro no Cadastro",
             description: errorMessage,
             variant: "destructive",
           });
           return false;
+        }
+
+        if (signUpData?.user) {
+          console.log('Conta criada com sucesso:', signUpData);
+          toast({
+            title: "Conta Criada",
+            description: "Sua conta foi criada com sucesso! Por favor, verifique seu email para confirmar o cadastro.",
+          });
+          return true;
         }
       }
 
