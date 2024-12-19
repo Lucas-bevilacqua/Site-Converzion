@@ -73,6 +73,7 @@ serve(async (req) => {
         const statusData = await statusResponse.json()
         console.log('Status response:', statusData)
         
+        // According to Evolution API docs, state can be 'open' or 'connected'
         if (statusData.state === 'open' || statusData.state === 'connected') {
           console.log('Instance is already connected')
           return new Response(
@@ -92,6 +93,7 @@ serve(async (req) => {
     console.log('Making request to Evolution API for new QR code...')
     
     // Instance is not connected, generate new QR code
+    // According to Evolution API docs, the endpoint is /instance/connect
     const evolutionUrl = `${empresa.url_instance}/instance/connect`
     console.log('Evolution API URL:', evolutionUrl)
     
@@ -121,6 +123,7 @@ serve(async (req) => {
       )
     }
 
+    // According to Evolution API docs, the QR code is in the 'code' field
     if (!evolutionResponse.ok || !qrData.code) {
       console.error('Error or missing QR code in Evolution API response:', qrData)
       return new Response(
