@@ -38,7 +38,12 @@ serve(async (req) => {
         events: [],
         qrcode: true,
         number: null,
-        token: null
+        token: null,
+        // Added required parameters from Evolution API v2.2.0
+        isLatest: true,
+        waitQrCode: true,
+        license: "free",
+        connectionType: "whatsapp-baileys"
       })
     })
 
@@ -66,8 +71,12 @@ serve(async (req) => {
         qrcode: true,
         number: null,
         token: null,
+        // Added required parameters from Evolution API v2.2.0
         client: "evolution_v2",
-        version: "2.2.0"
+        version: "2.2.0",
+        waitQrCode: true,
+        license: "free",
+        connectionType: "whatsapp-baileys"
       })
     })
 
