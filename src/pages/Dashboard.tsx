@@ -15,6 +15,7 @@ const Dashboard = () => {
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isGeneratingQR, setIsGeneratingQR] = useState(false);
+  const [telefoneempresa, setTelefoneempresa] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -29,7 +30,7 @@ const Dashboard = () => {
       // Fetch empresa data
       const { data: empresa, error } = await supabase
         .from('empresas')
-        .select('id, prompt, qr_code_url, is_connected')
+        .select('id, prompt, qr_code_url, is_connected, telefoneempresa')
         .eq('telefoneempresa', session.user.email)
         .single();
 
@@ -49,6 +50,7 @@ const Dashboard = () => {
         setPrompt(empresa.prompt || "");
         setQrCodeUrl(empresa.qr_code_url);
         setIsConnected(empresa.is_connected || false);
+        setTelefoneempresa(empresa.telefoneempresa);
       }
     };
 
@@ -164,6 +166,7 @@ const Dashboard = () => {
           isGeneratingQR={isGeneratingQR}
           qrCodeUrl={qrCodeUrl}
           onGenerateQR={handleGenerateQR}
+          telefoneempresa={telefoneempresa}
         />
 
         <AIAgentConfig

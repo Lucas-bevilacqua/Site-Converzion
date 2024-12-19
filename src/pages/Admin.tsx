@@ -19,7 +19,7 @@ import * as z from "zod";
 
 const formSchema = z.object({
   nomeempresa: z.string().min(2, "Nome muito curto"),
-  telefoneempresa: z.string().email("Deve ser um email válido"),
+  telefoneempresa: z.string().min(10, "Telefone inválido").max(15, "Telefone inválido"),
   url_instance: z.string().url("URL inválida"),
   apikeyevo: z.string().min(10, "API Key muito curta"),
 });
