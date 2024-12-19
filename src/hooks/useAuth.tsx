@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { createEmpresa } from "@/services/auth/empresa.service";
+import { createEmpresa, recreateEmpresa } from "@/services/auth/empresa.service";
 import { signUpUser, signInUser } from "@/services/auth/auth.service";
 
 export const useAuth = () => {
@@ -13,6 +13,9 @@ export const useAuth = () => {
     console.log('📧 Email:', email);
 
     try {
+      // Tenta recriar empresa se ela foi perdida
+      await recreateEmpresa(email, senha);
+
       // Primeiro tenta fazer login
       const { success: signInSuccess, error: signInError } = await signInUser(email, senha);
       
