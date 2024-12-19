@@ -11,7 +11,7 @@ export const useAuth = () => {
     console.log('Iniciando processo de autenticação para:', email);
 
     try {
-      // Try to sign in first
+      // Tentar fazer login primeiro
       console.log('Tentando fazer login...');
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
@@ -21,7 +21,7 @@ export const useAuth = () => {
       if (signInError) {
         console.error('Erro ao fazer login:', signInError);
         
-        // If error is about invalid credentials, try to sign up
+        // Se o erro for de credenciais inválidas, tentar criar conta
         if (signInError.message.includes('Invalid login credentials')) {
           console.log('Credenciais inválidas, tentando criar conta...');
           const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
@@ -49,27 +49,12 @@ export const useAuth = () => {
               title: "Conta Criada",
               description: "Sua conta foi criada com sucesso. Você já pode fazer login.",
             });
-            
-            // Try to sign in immediately after signup
-            const { data: immediateSignIn, error: immediateSignInError } = await supabase.auth.signInWithPassword({
-              email,
-              password: senha,
-            });
-
-            if (immediateSignInError) {
-              console.error('Erro ao fazer login após criar conta:', immediateSignInError);
-              return false;
-            }
-
-            if (immediateSignIn.user) {
-              console.log('Login realizado com sucesso após criar conta:', immediateSignIn);
-              return true;
-            }
+            return true;
           }
         } else {
           toast({
             title: "Erro no Login",
-            description: signInError.message,
+            description: "Email ou senha incorretos. Por favor, tente novamente.",
             variant: "destructive",
           });
           return false;
@@ -80,7 +65,7 @@ export const useAuth = () => {
         console.log('Login realizado com sucesso:', signInData);
         toast({
           title: "Sucesso",
-          description: "Login realizado com sucesso",
+          description: "Login realizado com sucesso!",
         });
         return true;
       }

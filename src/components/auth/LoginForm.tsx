@@ -23,7 +23,7 @@ export const LoginForm = () => {
       <div>
         <Input
           type="email"
-          placeholder="seu@email.com"
+          placeholder="Seu email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
