@@ -22,7 +22,7 @@ const Login = () => {
       // Primeiro, verificar se o email e senha correspondem a uma empresa
       const { data: empresa, error: empresaError } = await supabase
         .from('Empresas')
-        .select('emailempresa, senha')
+        .select('*')
         .eq('emailempresa', email)
         .single();
 
@@ -62,7 +62,7 @@ const Login = () => {
           password: senha,
           options: {
             data: {
-              empresa_id: empresa.id
+              empresa_id: empresa.NomeEmpresa // Usando NomeEmpresa em vez de id
             }
           }
         });
@@ -79,6 +79,9 @@ const Login = () => {
         }
         
         console.log('Usuário criado com sucesso:', signUpData);
+        
+        // Adicionar um pequeno delay antes de tentar fazer login
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
       // Fazer login
