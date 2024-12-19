@@ -4,8 +4,6 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Max-Age': '86400',
 }
 
 serve(async (req) => {
@@ -24,10 +22,7 @@ serve(async (req) => {
       console.error('❌ Email não fornecido')
       return new Response(
         JSON.stringify({ error: 'Email não fornecido' }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-          status: 400 
-        }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
     }
 
@@ -41,10 +36,7 @@ serve(async (req) => {
       console.error('❌ Variáveis de ambiente do Supabase não encontradas')
       return new Response(
         JSON.stringify({ error: 'Configuração do servidor incompleta' }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-          status: 500 
-        }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       )
     }
 
@@ -62,10 +54,7 @@ serve(async (req) => {
       console.error('❌ Erro ao buscar empresa:', empresaError)
       return new Response(
         JSON.stringify({ error: 'Empresa não encontrada' }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-          status: 404 
-        }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
       )
     }
 
@@ -76,10 +65,7 @@ serve(async (req) => {
           error: 'Credenciais do Evolution não configuradas',
           needsSetup: true 
         }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-          status: 400 
-        }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
     }
 
@@ -88,9 +74,28 @@ serve(async (req) => {
     console.log('🌐 URL base da instância:', baseUrl)
 
     try {
-      // Verifica status da instância
-      console.log('📱 Verificando status da instância:', empresa.instance_name)
-      const statusResponse = await fetch(`${baseUrl}/instance/info/${empresa.instance_name}`, {
+      // Primeiro verifica se existem instâncias
+      console.log('📱 Verificando instâncias existentes')
+      const fetchInstancesResponse = await fetch(`${baseUrl}/instance/fetchInstances`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': empresa.apikeyevo
+        }
+      })
+
+      if (!fetchInstancesResponse.ok) {
+        console.error('❌ Erro ao buscar instâncias:', await fetchInstancesResponse.text())
+        return new Response(
+          JSON.stringify({ error: 'Erro ao verificar instâncias', needsSetup: true }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+        )
+      }
+
+      // Verifica status da conexão
+      console.log('📱 Verificando status da conexão:', empresa.instance_name)
+      const statusResponse = await fetch(`${baseUrl}/instance/connectionState/${empresa.instance_name}`, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'apikey': empresa.apikeyevo
@@ -104,10 +109,7 @@ serve(async (req) => {
         if (statusResponse.status === 404) {
           return new Response(
             JSON.stringify({ error: 'Instância não encontrada', needsSetup: true }),
-            { 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-              status: 404 
-            }
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
           )
         }
         
@@ -118,7 +120,7 @@ serve(async (req) => {
       console.log('✅ Status data:', statusData)
 
       // Update connection status in database
-      const isConnected = statusData.instance?.state === 'open'
+      const isConnected = statusData.state === 'open'
       const { error: updateError } = await supabaseClient
         .from('Empresas')
         .update({ is_connected: isConnected })
@@ -132,22 +134,17 @@ serve(async (req) => {
         JSON.stringify({ 
           success: true, 
           isConnected,
-          state: statusData.instance?.state,
+          state: statusData.state,
           instanceExists: true
         }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
 
     } catch (error) {
       console.error('❌ Erro ao verificar status:', error)
       return new Response(
         JSON.stringify({ error: `Erro ao verificar status: ${error.message}` }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-          status: 500 
-        }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       )
     }
 
@@ -155,10 +152,7 @@ serve(async (req) => {
     console.error('❌ Erro na função:', error)
     return new Response(
       JSON.stringify({ error: 'Erro interno do servidor' }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-        status: 500 
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     )
   }
 })

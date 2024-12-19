@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -58,14 +59,14 @@ serve(async (req) => {
       )
     }
 
-    // Clean up the URL - remove any trailing /message or other paths
+    // Clean up the URL
     const baseUrl = empresa.url_instance.split('/message')[0].replace(/\/+$/, '')
     console.log('URL base da instância:', baseUrl)
 
     try {
-      // Requisição 1: Verifica se a instância existe
+      // Primeiro verifica se a instância existe
       console.log('Verificando se a instância existe:', empresa.instance_name)
-      const statusResponse = await fetch(`${baseUrl}/instance/info/${empresa.instance_name}`, {
+      const statusResponse = await fetch(`${baseUrl}/instance/fetchInstances`, {
         headers: {
           'Content-Type': 'application/json',
           'apikey': empresa.apikeyevo
@@ -73,10 +74,10 @@ serve(async (req) => {
       })
 
       // Se a instância não existir, cria uma nova
-      if (statusResponse.status === 404) {
+      if (statusResponse.status === 404 || (await statusResponse.json()).length === 0) {
         console.log('Instância não existe, criando nova...')
         
-        // Requisição 2: Cria nova instância
+        // Cria nova instância
         const createResponse = await fetch(`${baseUrl}/instance/create`, {
           method: 'POST',
           headers: {
@@ -95,9 +96,9 @@ serve(async (req) => {
         }
       }
 
-      // Requisição 3: Gera QR code
-      console.log('Gerando QR code para instância:', empresa.instance_name)
-      const qrResponse = await fetch(`${baseUrl}/instance/qrcode/${empresa.instance_name}`, {
+      // Conecta a instância
+      console.log('Conectando instância:', empresa.instance_name)
+      const connectResponse = await fetch(`${baseUrl}/instance/connect/${empresa.instance_name}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -105,19 +106,19 @@ serve(async (req) => {
         }
       })
 
-      if (!qrResponse.ok) {
-        const errorText = await qrResponse.text()
-        console.error('Erro ao gerar QR code:', errorText)
-        throw new Error(`Evolution API returned ${qrResponse.status}: ${errorText}`)
+      if (!connectResponse.ok) {
+        const errorText = await connectResponse.text()
+        console.error('Erro ao conectar instância:', errorText)
+        throw new Error(`Evolution API returned ${connectResponse.status}: ${errorText}`)
       }
 
-      const qrData = await qrResponse.json()
+      const connectData = await connectResponse.json()
       console.log('QR code gerado com sucesso')
 
       // Update QR code URL in database
       const { error: updateError } = await supabaseClient
         .from('Empresas')
-        .update({ qr_code_url: qrData.qrcode.base64 })
+        .update({ qr_code_url: connectData.qrcode?.base64 })
         .eq('emailempresa', email)
 
       if (updateError) {
@@ -127,7 +128,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: true,
-          qr: qrData.qrcode.base64
+          qr: connectData.qrcode?.base64
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
