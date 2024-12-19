@@ -12,19 +12,13 @@ serve(async (req) => {
   }
 
   try {
-    const { instance_url, empresa_id } = await req.json()
+    const { email } = await req.json()
     
-    if (!instance_url) {
-      console.error('URL da instância não fornecida')
-      return new Response(
-        JSON.stringify({ error: 'URL da instância não fornecida' }),
-        { 
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      )
+    if (!email) {
+      throw new Error('Email não fornecido')
     }
 
+    // Get Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     
@@ -34,81 +28,74 @@ serve(async (req) => {
 
     const supabaseClient = createClient(supabaseUrl, supabaseKey)
     
+    // Get empresa data for the specific email
     const { data: empresa, error: empresaError } = await supabaseClient
       .from('Empresas')
-      .select('apikeyevo, instance_name')
-      .eq('id', empresa_id)
+      .select('url_instance, instance_name, apikeyevo')
+      .eq('emailempresa', email)
       .single()
 
-    if (empresaError || !empresa?.apikeyevo) {
-      console.error('API key not found for empresa:', empresaError)
-      throw new Error('API key not found for empresa')
+    if (empresaError || !empresa) {
+      console.error('Erro ao buscar dados da empresa:', empresaError)
+      return new Response(
+        JSON.stringify({ error: 'Empresa não encontrada' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+      )
     }
 
-    if (!empresa.instance_name) {
-      console.error('Instance name not found for empresa')
-      throw new Error('Instance name not found for empresa')
+    if (!empresa.url_instance || !empresa.apikeyevo || !empresa.instance_name) {
+      return new Response(
+        JSON.stringify({ error: 'Credenciais do Evolution não configuradas' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      )
     }
 
-    const baseUrl = instance_url.split('/message')[0].replace(/\/$/, '')
+    // Clean up the URL to ensure it's just the base URL without any trailing paths
+    const baseUrl = empresa.url_instance.split('/message')[0].replace(/\/$/, '')
     console.log('URL base da instância:', baseUrl)
-    
-    console.log('🔄 Criando nova instância...')
-    const createInstanceResponse = await fetch(`${baseUrl}/instance/create`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': empresa.apikeyevo
-      },
-      body: JSON.stringify({
-        instanceName: empresa.instance_name,
-        qrcode: true,
-        integration: "WHATSAPP-BAILEYS",
-        token: empresa.apikeyevo
-      })
-    })
 
-    const createData = await createInstanceResponse.json()
-    console.log('Create instance response:', createData)
-
-    if (!createInstanceResponse.ok) {
-      console.error('❌ Erro ao criar instância:', createData)
-      throw new Error(`Erro ao criar instância: ${JSON.stringify(createData)}`)
-    }
-
-    console.log('✅ Instância criada:', createData)
-
-    console.log('🔄 Conectando instância para gerar QR code...')
-    const connectResponse = await fetch(`${baseUrl}/instance/connect/${empresa.instance_name}`, {
-      method: 'GET',
+    // Generate QR code using the provided structure
+    const qrResponse = await fetch(`${baseUrl}/instance/qr/${empresa.instance_name}`, {
       headers: {
         'Content-Type': 'application/json',
         'apikey': empresa.apikeyevo
       }
     })
 
-    if (!connectResponse.ok) {
-      const errorData = await connectResponse.json()
-      console.error('❌ Erro ao conectar instância:', errorData)
-      throw new Error(`Erro ao conectar instância: ${JSON.stringify(errorData)}`)
+    if (!qrResponse.ok) {
+      console.error('Erro na resposta do Evolution:', await qrResponse.text())
+      return new Response(
+        JSON.stringify({ error: 'Erro ao gerar QR code' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      )
     }
 
-    const connectData = await connectResponse.json()
-    console.log('✅ Instância conectada, QR code gerado:', connectData)
+    const qrData = await qrResponse.json()
+    console.log('QR code gerado com sucesso')
+
+    // Update QR code URL in database
+    const { error: updateError } = await supabaseClient
+      .from('Empresas')
+      .update({ qr_code_url: qrData.qr })
+      .eq('emailempresa', email)
+
+    if (updateError) {
+      console.error('Erro ao atualizar QR code:', updateError)
+    }
 
     return new Response(
-      JSON.stringify(connectData),
+      JSON.stringify({ 
+        success: true,
+        qr: qrData.qr
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error) {
-    console.error('❌ Erro:', error)
+    console.error('Erro na função:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
+      JSON.stringify({ error: 'Erro interno do servidor' }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     )
   }
 })

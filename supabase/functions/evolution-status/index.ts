@@ -12,6 +12,12 @@ serve(async (req) => {
   }
 
   try {
+    const { email } = await req.json()
+    
+    if (!email) {
+      throw new Error('Email não fornecido')
+    }
+
     // Get Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -25,8 +31,8 @@ serve(async (req) => {
     // Get empresa data for the specific email
     const { data: empresa, error: empresaError } = await supabaseClient
       .from('Empresas')
-      .select('url_instance, apikeyevo')
-      .eq('emailempresa', 'lucas.bevilacqua@idealtrends.com.br')
+      .select('url_instance, instance_name, apikeyevo')
+      .eq('emailempresa', email)
       .single()
 
     if (empresaError || !empresa) {
@@ -37,7 +43,7 @@ serve(async (req) => {
       )
     }
 
-    if (!empresa.url_instance || !empresa.apikeyevo) {
+    if (!empresa.url_instance || !empresa.apikeyevo || !empresa.instance_name) {
       return new Response(
         JSON.stringify({ error: 'Credenciais do Evolution não configuradas' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
@@ -49,7 +55,7 @@ serve(async (req) => {
     console.log('URL base da instância:', baseUrl)
 
     // Check instance status using the provided structure
-    const statusResponse = await fetch(`${baseUrl}/instance/connectionState/Lucas O`, {
+    const statusResponse = await fetch(`${baseUrl}/instance/connectionState/${empresa.instance_name}`, {
       headers: {
         'Content-Type': 'application/json',
         'apikey': empresa.apikeyevo
@@ -72,7 +78,7 @@ serve(async (req) => {
     const { error: updateError } = await supabaseClient
       .from('Empresas')
       .update({ is_connected: isConnected })
-      .eq('emailempresa', 'lucas.bevilacqua@idealtrends.com.br')
+      .eq('emailempresa', email)
 
     if (updateError) {
       console.error('Erro ao atualizar status:', updateError)
