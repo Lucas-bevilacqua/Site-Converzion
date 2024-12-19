@@ -61,7 +61,8 @@ serve(async (req) => {
       body: JSON.stringify({
         instanceName: "instance1",
         qrcode: true,
-        integration: "WHATSAPP-BAILEYS"
+        integration: "WHATSAPP-BAILEYS",
+        token: empresa.apikeyevo // Added token parameter
       })
     })
 
