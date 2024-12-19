@@ -31,7 +31,7 @@ export const WhatsAppStatus = ({
         // First get the empresa data to get the instance URL
         const { data: empresa, error: empresaError } = await supabase
           .from('Empresas')
-          .select('url_instance, apikeyevo')
+          .select('url_instance, apikeyevo, telefoneempresa')
           .eq('id', 8) // TODO: Use dynamic empresa ID
           .single();
 
@@ -40,29 +40,39 @@ export const WhatsAppStatus = ({
           return;
         }
 
+        if (!empresa.telefoneempresa) {
+          console.log('Telefone da empresa não configurado');
+          return;
+        }
+
         // Clean up the URL to ensure it's just the base URL without any trailing paths
         const baseUrl = empresa.url_instance.split('/message')[0].replace(/\/$/, '');
+        const instanceName = empresa.telefoneempresa.replace(/\D/g, '');
         
-        // Check instance status
-        const statusResponse = await fetch(`${baseUrl}/instance/status/instance1`, {
+        console.log('Verificando status para instância:', instanceName);
+        
+        // Check instance status using the correct endpoint
+        const statusResponse = await fetch(`${baseUrl}/instance/connectionState/${instanceName}`, {
           headers: {
             'apikey': empresa.apikeyevo
           }
         });
 
+        if (!statusResponse.ok) {
+          console.error('Erro ao verificar status:', await statusResponse.text());
+          return;
+        }
+
         const statusData = await statusResponse.json();
         console.log('Status da conexão:', statusData);
 
         // Update connection status in database if different
-        if (statusData.status === 'connected' && !isConnected) {
+        const isNowConnected = statusData.state === 'open';
+        if (isNowConnected !== isConnected) {
+          console.log(`Atualizando status de conexão para: ${isNowConnected}`);
           await supabase
             .from('Empresas')
-            .update({ is_connected: true })
-            .eq('id', 8); // TODO: Use dynamic empresa ID
-        } else if (statusData.status !== 'connected' && isConnected) {
-          await supabase
-            .from('Empresas')
-            .update({ is_connected: false })
+            .update({ is_connected: isNowConnected })
             .eq('id', 8); // TODO: Use dynamic empresa ID
         }
       } catch (error) {
