@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { User } from "@supabase/supabase-js";
 
 export const useAuth = () => {
   const { toast } = useToast();
@@ -12,8 +13,20 @@ export const useAuth = () => {
 
     try {
       // First check if user exists
-      const { data: { users }, error: getUserError } = await supabase.auth.admin.listUsers();
-      const existingUser = users?.find(user => user.email === email);
+      const { data, error: getUserError } = await supabase.auth.admin.listUsers();
+      
+      if (getUserError) {
+        console.error('Erro ao buscar usuários:', getUserError);
+        toast({
+          title: "Erro",
+          description: "Erro ao verificar usuário. Por favor, tente novamente.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      const users = data?.users as User[] || [];
+      const existingUser = users.find(user => user.email === email);
       console.log('Verificando usuário existente:', existingUser);
 
       if (!existingUser) {
