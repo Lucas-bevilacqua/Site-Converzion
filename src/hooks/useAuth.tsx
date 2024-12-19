@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { removeExistingEmpresa, createEmpresa } from "@/services/auth/empresa.service";
-import { signUpUser } from "@/services/auth/auth.service";
+import { signUpUser, signInUser } from "@/services/auth/auth.service";
 
 export const useAuth = () => {
   const { toast } = useToast();
@@ -13,19 +13,34 @@ export const useAuth = () => {
     console.log('📧 Email:', email);
 
     try {
+      // Primeiro tenta fazer login
+      const { success: signInSuccess, error: signInError } = await signInUser(email, senha);
+      
+      if (signInSuccess) {
+        console.log('✅ Login bem-sucedido!');
+        toast({
+          title: "Bem-vindo de volta!",
+          description: "Login realizado com sucesso.",
+        });
+        return true;
+      }
+
+      // Se o login falhar, tenta criar uma nova conta
+      console.log('🆕 Tentando criar nova conta...');
+      
       // Remove empresa existente
       const { error: removeError } = await removeExistingEmpresa(email);
       if (removeError) {
         console.log('⚠️ Erro ao tentar remover empresa:', removeError);
       }
 
-      // Cria nova conta
-      const { success, error: signUpError } = await signUpUser(email, "default123", empresa_id);
+      // Tenta criar nova conta
+      const { success: signUpSuccess, error: signUpError } = await signUpUser(email, senha, empresa_id);
       
-      if (!success) {
+      if (!signUpSuccess) {
         toast({
           title: "Erro no Cadastro",
-          description: "Não foi possível criar sua conta. Tente novamente.",
+          description: signUpError || "Não foi possível criar sua conta. Tente novamente.",
           variant: "destructive",
         });
         return false;
@@ -35,7 +50,7 @@ export const useAuth = () => {
       const { error: createEmpresaError } = await createEmpresa({
         id: empresa_id,
         emailempresa: email,
-        senha: "default123",
+        senha: senha,
         NomeEmpresa: 'Nova Empresa'
       });
 

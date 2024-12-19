@@ -1,8 +1,24 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { AuthResponse } from "./types";
 
+export const signInUser = async (email: string, password: string): Promise<AuthResponse> => {
+  console.log('🔐 Tentando login');
+  
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) {
+    console.error('❌ Erro ao fazer login:', error);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+};
+
 export const signUpUser = async (email: string, password: string, empresa_id: number): Promise<AuthResponse> => {
-  console.log('📝 Criando nova conta');
+  console.log('📝 Tentando criar nova conta');
   
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -16,22 +32,9 @@ export const signUpUser = async (email: string, password: string, empresa_id: nu
 
   if (error) {
     console.error('❌ Erro ao criar conta:', error);
-    return { success: false, error: error.message };
-  }
-
-  return { success: true };
-};
-
-export const signInUser = async (email: string, password: string): Promise<AuthResponse> => {
-  console.log('🔐 Tentando login');
-  
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-
-  if (error) {
-    console.error('❌ Erro ao fazer login:', error);
+    if (error.message.includes('User already registered')) {
+      return { success: false, error: 'Email já cadastrado. Por favor, faça login.' };
+    }
     return { success: false, error: error.message };
   }
 
