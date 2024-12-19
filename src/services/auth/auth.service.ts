@@ -11,6 +11,9 @@ export const signInUser = async (email: string, password: string): Promise<AuthR
 
   if (error) {
     console.error('❌ Erro ao fazer login:', error);
+    if (error.message.includes('Invalid login credentials')) {
+      return { success: false, error: 'Credenciais inválidas' };
+    }
     return { success: false, error: error.message };
   }
 
