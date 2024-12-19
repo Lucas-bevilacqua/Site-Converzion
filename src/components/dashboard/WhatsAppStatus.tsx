@@ -21,10 +21,17 @@ export const WhatsAppStatus = () => {
     try {
       console.log('🔍 Verificando status da conexão...');
       
+      // Pega o usuário atual
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.email) {
+        console.log('❌ Usuário não autenticado');
+        return;
+      }
+
       const { data: empresa, error: empresaError } = await supabase
         .from('Empresas')
         .select('url_instance, instance_name, apikeyevo')
-        .eq('emailempresa', 'lucas.bevilacqua@idealtrends.com.br')
+        .eq('emailempresa', session.user.email)
         .single();
 
       if (empresaError || !empresa?.url_instance || !empresa?.apikeyevo) {
@@ -36,7 +43,7 @@ export const WhatsAppStatus = () => {
       console.log('🔗 URL da instância:', empresa.url_instance);
 
       const { data, error } = await supabase.functions.invoke('evolution-status', {
-        body: { email: 'lucas.bevilacqua@idealtrends.com.br' }
+        body: { email: session.user.email }
       });
 
       if (error) {
@@ -64,10 +71,22 @@ export const WhatsAppStatus = () => {
       setIsLoading(true);
       console.log('🔄 Iniciando processo de conexão...');
       
+      // Pega o usuário atual
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.email) {
+        console.log('❌ Usuário não autenticado');
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Usuário não autenticado"
+        });
+        return;
+      }
+
       const { data: empresa, error: empresaError } = await supabase
         .from('Empresas')
         .select('url_instance, instance_name, apikeyevo')
-        .eq('emailempresa', 'lucas.bevilacqua@idealtrends.com.br')
+        .eq('emailempresa', session.user.email)
         .single();
 
       if (empresaError || !empresa?.url_instance || !empresa?.apikeyevo) {
@@ -84,7 +103,7 @@ export const WhatsAppStatus = () => {
       console.log('🔗 URL da instância:', empresa.url_instance);
 
       const { data: qrData, error } = await supabase.functions.invoke('evolution-qr', {
-        body: { email: 'lucas.bevilacqua@idealtrends.com.br' }
+        body: { email: session.user.email }
       });
 
       if (error) {
