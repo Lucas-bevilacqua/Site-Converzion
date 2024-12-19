@@ -57,7 +57,7 @@ serve(async (req) => {
     console.log('✅ Instância criada:', createData)
 
     // Then connect the instance to get the QR code
-    console.log('🔄 Conectando instância...')
+    console.log('🔄 Conectando instância para gerar QR code...')
     const connectResponse = await fetch(`${instance_url}/instance/connect`, {
       method: 'POST',
       headers: {
@@ -87,7 +87,13 @@ serve(async (req) => {
     }
 
     const connectData = await connectResponse.json()
-    console.log('✅ Instância conectada:', connectData)
+    console.log('✅ Instância conectada, QR code gerado:', connectData)
+
+    // Extract and process QR code data
+    const qrCodeData = connectData.qrcode
+    if (!qrCodeData) {
+      throw new Error('QR code não foi gerado')
+    }
 
     return new Response(
       JSON.stringify(connectData),
