@@ -41,48 +41,6 @@ export type Database = {
           },
         ]
       }
-      empresas: {
-        Row: {
-          "API Dify": string | null
-          apikeyevo: string | null
-          dify_api_key: string | null
-          dify_endpoint: string | null
-          id: number
-          is_connected: boolean | null
-          nomeempresa: string
-          prompt: string | null
-          qr_code_url: string | null
-          telefoneempresa: string | null
-          url_instance: string | null
-        }
-        Insert: {
-          "API Dify"?: string | null
-          apikeyevo?: string | null
-          dify_api_key?: string | null
-          dify_endpoint?: string | null
-          id?: number
-          is_connected?: boolean | null
-          nomeempresa: string
-          prompt?: string | null
-          qr_code_url?: string | null
-          telefoneempresa?: string | null
-          url_instance?: string | null
-        }
-        Update: {
-          "API Dify"?: string | null
-          apikeyevo?: string | null
-          dify_api_key?: string | null
-          dify_endpoint?: string | null
-          id?: number
-          is_connected?: boolean | null
-          nomeempresa?: string
-          prompt?: string | null
-          qr_code_url?: string | null
-          telefoneempresa?: string | null
-          url_instance?: string | null
-        }
-        Relationships: []
-      }
       Empresas: {
         Row: {
           "API Dify": string | null
@@ -147,22 +105,7 @@ export type Database = {
           messages_received?: number | null
           messages_sent?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "fk_empresa"
-            columns: ["empresa_id"]
-            isOneToOne: false
-            referencedRelation: "empresas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "message_metrics_empresa_id_fkey"
-            columns: ["empresa_id"]
-            isOneToOne: false
-            referencedRelation: "empresas"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {
