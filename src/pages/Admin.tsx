@@ -58,9 +58,10 @@ const Admin = () => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setLoading(true);
+      console.log("Iniciando cadastro da empresa:", values);
       
       // Criar empresa no Supabase
-      const { data: empresa, error } = await supabase
+      const { data: empresa, error: empresaError } = await supabase
         .from('empresas')
         .insert([{
           nomeempresa: values.nomeempresa,
@@ -72,15 +73,23 @@ const Admin = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (empresaError) {
+        console.error('Erro ao cadastrar empresa:', empresaError);
+        throw new Error(`Erro ao cadastrar empresa: ${empresaError.message}`);
+      }
+
+      console.log("Empresa cadastrada com sucesso:", empresa);
 
       // Criar usuário no Supabase Auth
       const { error: authError } = await supabase.auth.signUp({
         email: values.telefoneempresa,
-        password: "senha123", // Você pode gerar uma senha aleatória aqui
+        password: "senha123",
       });
 
-      if (authError) throw authError;
+      if (authError) {
+        console.error('Erro ao criar usuário:', authError);
+        throw new Error(`Erro ao criar usuário: ${authError.message}`);
+      }
 
       toast({
         title: "Sucesso!",
@@ -89,10 +98,10 @@ const Admin = () => {
 
       form.reset();
     } catch (error) {
-      console.error('Erro ao cadastrar empresa:', error);
+      console.error('Erro detalhado:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível cadastrar a empresa",
+        description: error instanceof Error ? error.message : "Não foi possível cadastrar a empresa",
         variant: "destructive",
       });
     } finally {
