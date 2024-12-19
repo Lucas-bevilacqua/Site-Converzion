@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { User } from "@supabase/supabase-js";
 
 export const useAuth = () => {
   const { toast } = useToast();
@@ -13,7 +14,7 @@ export const useAuth = () => {
     try {
       // Primeiro, verificar se o usuário já existe
       const { data: { users }, error: getUserError } = await supabase.auth.admin.listUsers();
-      const userExists = users?.some(user => user.email === email);
+      const userExists = users?.some((user: User) => user.email === email);
 
       if (userExists) {
         // Se o usuário existe, tenta fazer login
