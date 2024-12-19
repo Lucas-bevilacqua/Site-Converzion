@@ -2,10 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/components/ui/use-toast";
-import { Loader2 } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import WhatsAppStatus from "@/components/dashboard/WhatsAppStatus";
+import AIAgentConfig from "@/components/dashboard/AIAgentConfig";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -53,7 +52,7 @@ const Dashboard = () => {
     checkAuth();
   }, [navigate, toast]);
 
-  // Verificar status periodicamente
+  // Check status periodically
   useEffect(() => {
     if (!empresaId) return;
 
@@ -74,7 +73,7 @@ const Dashboard = () => {
       }
     };
 
-    const interval = setInterval(checkStatus, 10000); // Verificar a cada 10 segundos
+    const interval = setInterval(checkStatus, 10000);
     return () => clearInterval(interval);
   }, [empresaId]);
 
@@ -153,72 +152,19 @@ const Dashboard = () => {
           </Button>
         </div>
 
-        {/* QR Code Section */}
-        <Card className="p-6 space-y-4">
-          <h2 className="text-xl font-semibold text-foreground">Status do WhatsApp</h2>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-              <span className="text-sm text-muted-foreground">
-                {isConnected ? 'Conectado' : 'Desconectado'}
-              </span>
-            </div>
-            {!isConnected && (
-              <Button 
-                onClick={handleGenerateQR} 
-                disabled={isGeneratingQR}
-                size="sm"
-              >
-                {isGeneratingQR && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Gerar QR Code
-              </Button>
-            )}
-          </div>
-          
-          {!isConnected && qrCodeUrl && (
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Escaneie o QR Code abaixo com seu WhatsApp para conectar:
-              </p>
-              <div className="flex justify-center">
-                <img 
-                  src={qrCodeUrl} 
-                  alt="QR Code WhatsApp" 
-                  className="max-w-[300px] h-auto"
-                />
-              </div>
-            </div>
-          )}
-        </Card>
+        <WhatsAppStatus
+          isConnected={isConnected}
+          isGeneratingQR={isGeneratingQR}
+          qrCodeUrl={qrCodeUrl}
+          onGenerateQR={handleGenerateQR}
+        />
 
-        <div className="bg-card p-6 rounded-lg border border-border space-y-4">
-          <h2 className="text-xl font-semibold text-foreground">Configuração do Agente IA</h2>
-          <p className="text-muted-foreground">
-            Configure o prompt que seu agente IA utilizará para interagir com seus clientes.
-          </p>
-          
-          <div className="space-y-2">
-            <label htmlFor="prompt" className="text-sm font-medium text-foreground">
-              Prompt do Agente
-            </label>
-            <Textarea
-              id="prompt"
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Digite aqui o prompt para seu agente IA..."
-              className="min-h-[200px]"
-            />
-          </div>
-
-          <Button 
-            onClick={handleSavePrompt} 
-            disabled={loading}
-            className="w-full sm:w-auto"
-          >
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Salvar Prompt
-          </Button>
-        </div>
+        <AIAgentConfig
+          prompt={prompt}
+          loading={loading}
+          onPromptChange={setPrompt}
+          onSavePrompt={handleSavePrompt}
+        />
       </div>
     </div>
   );
