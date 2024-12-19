@@ -25,9 +25,6 @@ serve(async (req) => {
       )
     }
 
-    // First create the instance
-    console.log('🔄 Criando nova instância...', instance_url)
-
     // Get the API key from the database for this empresa
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -73,18 +70,14 @@ serve(async (req) => {
 
     console.log('✅ Instância criada:', createData)
 
-    // Connect instance to get QR code
+    // Connect instance to get QR code - Changed to GET method
     console.log('🔄 Conectando instância para gerar QR code...')
-    const connectResponse = await fetch(`${instance_url}/instance/connect`, {
-      method: 'POST',
+    const connectResponse = await fetch(`${instance_url}/instance/connect/instance1`, {
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'apikey': empresa.apikeyevo
-      },
-      body: JSON.stringify({
-        instanceName: "instance1",
-        qrcode: true
-      })
+      }
     })
 
     if (!connectResponse.ok) {
