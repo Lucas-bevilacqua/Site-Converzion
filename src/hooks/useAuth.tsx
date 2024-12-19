@@ -28,7 +28,7 @@ export const useAuth = () => {
             data: { empresa_id },
             emailRedirectTo: window.location.origin + '/login',
             // Desabilita a necessidade de confirmação de email
-            emailConfirmTo: null
+            emailConfirm: false
           }
         });
 
