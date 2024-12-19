@@ -1,18 +1,18 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { AIAgentConfig } from "@/components/dashboard/AIAgentConfig";
+import { WhatsAppStatus } from "@/components/dashboard/WhatsAppStatus";
 import { useToast } from "@/hooks/use-toast";
-import WhatsAppStatus from "@/components/dashboard/WhatsAppStatus";
-import AIAgentConfig from "@/components/dashboard/AIAgentConfig";
-import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 
-const Dashboard = () => {
+export default function Dashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [prompt, setPrompt] = useState("");
   const [empresaId, setEmpresaId] = useState<number | null>(null);
+  const [prompt, setPrompt] = useState("");
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isGeneratingQR, setIsGeneratingQR] = useState(false);
@@ -22,13 +22,14 @@ const Dashboard = () => {
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      
       if (!session) {
+        console.log('No session found, redirecting to login');
         navigate('/login');
         return;
       }
 
-      console.log('Fetching empresa data for email:', session.user.email);
-      
+      console.log('Loading empresa data for:', session.user.email);
       const { data: empresa, error } = await supabase
         .from('Empresas')
         .select('id, prompt, qr_code_url, is_connected, telefoneempresa, is_admin')
@@ -36,10 +37,10 @@ const Dashboard = () => {
         .single();
 
       if (error) {
-        console.error('Error fetching empresa:', error);
+        console.error('Error loading empresa:', error);
         toast({
-          title: "Erro",
-          description: "Não foi possível carregar os dados da empresa",
+          title: "Erro ao carregar dados",
+          description: "Não foi possível carregar os dados da empresa.",
           variant: "destructive",
         });
         return;
@@ -64,93 +65,72 @@ const Dashboard = () => {
     checkAuth();
   }, [navigate, toast]);
 
-  // Check status periodically
-  useEffect(() => {
-    if (!empresaId) return;
-
-    const checkStatus = async () => {
-      try {
-        console.log('Checking WhatsApp status for empresa:', empresaId);
-        const { data, error } = await supabase.functions.invoke('evolution-status', {
-          body: { empresaId }
-        });
-
-        if (error) {
-          console.error('Error checking status:', error);
-          return;
-        }
-
-        console.log('Status update received:', data);
-        setIsConnected(data.isConnected);
-      } catch (error) {
-        console.error('Error checking status:', error);
-      }
-    };
-
-    const interval = setInterval(checkStatus, 10000);
-    return () => clearInterval(interval);
-  }, [empresaId]);
-
-  const handleGenerateQR = async () => {
-    if (!empresaId || isGeneratingQR) return;
-
-    setIsGeneratingQR(true);
-    try {
-      console.log('Generating QR code for empresa:', empresaId);
-      const { data, error } = await supabase.functions.invoke('evolution-qr', {
-        body: { empresaId }
-      });
-
-      if (error) {
-        console.error('Error generating QR code:', error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível gerar o QR code",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      console.log('QR code generated successfully');
-      setQrCodeUrl(data.qrcode);
-      setIsConnected(false);
-    } catch (error) {
-      console.error('Error generating QR code:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível gerar o QR code",
-        variant: "destructive",
-      });
-    } finally {
-      setIsGeneratingQR(false);
-    }
-  };
-
   const handleSavePrompt = async () => {
     if (!empresaId) return;
-    
+
     setLoading(true);
+    console.log('Saving prompt for empresa:', empresaId);
+
     const { error } = await supabase
       .from('Empresas')
       .update({ prompt })
       .eq('id', empresaId);
 
-    setLoading(false);
-
     if (error) {
-      console.error('Error updating prompt:', error);
+      console.error('Error saving prompt:', error);
       toast({
-        title: "Erro",
-        description: "Não foi possível salvar o prompt",
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar as alterações.",
         variant: "destructive",
       });
-      return;
+    } else {
+      console.log('Prompt saved successfully');
+      toast({
+        title: "Sucesso",
+        description: "Alterações salvas com sucesso.",
+      });
     }
 
-    toast({
-      title: "Sucesso",
-      description: "Prompt salvo com sucesso!",
-    });
+    setLoading(false);
+  };
+
+  const handleGenerateQR = async () => {
+    if (!empresaId) return;
+
+    setIsGeneratingQR(true);
+    console.log('Generating QR code for empresa:', empresaId);
+
+    try {
+      const response = await fetch('/api/evolution-qr', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ empresa_id: empresaId }),
+      });
+
+      if (!response.ok) throw new Error('Failed to generate QR code');
+
+      const data = await response.json();
+      console.log('QR code generated:', data);
+      
+      if (data.qr_code) {
+        setQrCodeUrl(data.qr_code);
+        toast({
+          title: "QR Code Gerado",
+          description: "Escaneie o QR Code para conectar seu WhatsApp.",
+        });
+      }
+    } catch (error) {
+      console.error('Error generating QR code:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível gerar o QR Code.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingQR(false);
+    }
   };
 
   return (
@@ -159,12 +139,10 @@ const Dashboard = () => {
         <DashboardSidebar />
         <main className="flex-1 p-6">
           <div className="max-w-4xl mx-auto space-y-8">
-            <h1 className="text-3xl font-bold text-foreground">Painel de Controle</h1>
-
             <WhatsAppStatus
               isConnected={isConnected}
-              isGeneratingQR={isGeneratingQR}
               qrCodeUrl={qrCodeUrl}
+              isGeneratingQR={isGeneratingQR}
               onGenerateQR={handleGenerateQR}
               telefoneempresa={telefoneempresa}
             />
@@ -182,6 +160,4 @@ const Dashboard = () => {
       </div>
     </SidebarProvider>
   );
-};
-
-export default Dashboard;
+}

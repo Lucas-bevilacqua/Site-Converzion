@@ -1,3 +1,6 @@
+import { useNavigate } from "react-router-dom";
+import { Home, QrCode, Settings, LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Sidebar,
   SidebarContent,
@@ -8,9 +11,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Home, Settings, User, LogOut } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 
 export function DashboardSidebar() {
   const navigate = useNavigate();
@@ -20,6 +20,29 @@ export function DashboardSidebar() {
     navigate('/');
   };
 
+  const items = [
+    {
+      title: "Dashboard",
+      icon: Home,
+      onClick: () => navigate('/dashboard')
+    },
+    {
+      title: "WhatsApp",
+      icon: QrCode,
+      onClick: () => navigate('/dashboard')
+    },
+    {
+      title: "Configurações",
+      icon: Settings,
+      onClick: () => navigate('/dashboard/settings')
+    },
+    {
+      title: "Sair",
+      icon: LogOut,
+      onClick: handleLogout
+    }
+  ];
+
   return (
     <Sidebar>
       <SidebarContent>
@@ -27,36 +50,14 @@ export function DashboardSidebar() {
           <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <a href="/dashboard">
-                    <Home className="h-4 w-4" />
-                    <span>Início</span>
-                  </a>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <a href="/dashboard/profile">
-                    <User className="h-4 w-4" />
-                    <span>Meu Perfil</span>
-                  </a>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <a href="/dashboard/settings">
-                    <Settings className="h-4 w-4" />
-                    <span>Configurações</span>
-                  </a>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton onClick={handleLogout}>
-                  <LogOut className="h-4 w-4" />
-                  <span>Sair</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {items.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton onClick={item.onClick}>
+                    <item.icon className="w-5 h-5" />
+                    <span>{item.title}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
