@@ -4,5 +4,7 @@ project_id = "navbvwimzfakdzwwzajk"
 enabled = true
 
 [functions]
-[functions.create-hubspot-contact]
+[functions.evolution-status]
+verify_jwt = false
+[functions.evolution-qr]
 verify_jwt = false
