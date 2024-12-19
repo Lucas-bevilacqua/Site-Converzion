@@ -87,6 +87,7 @@ export type Database = {
         Row: {
           "API Dify": string | null
           apikeyevo: string | null
+          emailempresa: string | null
           id: number
           NomeEmpresa: string
           prompt: string | null
@@ -96,6 +97,7 @@ export type Database = {
         Insert: {
           "API Dify"?: string | null
           apikeyevo?: string | null
+          emailempresa?: string | null
           id?: number
           NomeEmpresa: string
           prompt?: string | null
@@ -105,6 +107,7 @@ export type Database = {
         Update: {
           "API Dify"?: string | null
           apikeyevo?: string | null
+          emailempresa?: string | null
           id?: number
           NomeEmpresa?: string
           prompt?: string | null

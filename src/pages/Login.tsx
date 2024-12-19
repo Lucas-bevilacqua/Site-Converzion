@@ -21,8 +21,8 @@ const Login = () => {
       // First, check if the email exists in the Empresas table
       const { data: empresa, error: empresaError } = await supabase
         .from('Empresas')
-        .select('telefoneempresa')
-        .eq('telefoneempresa', email)
+        .select('emailempresa')
+        .eq('emailempresa', email)
         .single();
 
       if (empresaError || !empresa) {
