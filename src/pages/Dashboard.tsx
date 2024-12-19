@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import WhatsAppStatus from "@/components/dashboard/WhatsAppStatus";
 import AIAgentConfig from "@/components/dashboard/AIAgentConfig";
+import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -155,31 +156,31 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-4xl mx-auto space-y-8">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-foreground">Painel de Controle</h1>
-          <Button variant="outline" onClick={handleLogout}>
-            Sair
-          </Button>
-        </div>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-background">
+        <DashboardSidebar />
+        <main className="flex-1 p-6">
+          <div className="max-w-4xl mx-auto space-y-8">
+            <h1 className="text-3xl font-bold text-foreground">Painel de Controle</h1>
 
-        <WhatsAppStatus
-          isConnected={isConnected}
-          isGeneratingQR={isGeneratingQR}
-          qrCodeUrl={qrCodeUrl}
-          onGenerateQR={handleGenerateQR}
-          telefoneempresa={telefoneempresa}
-        />
+            <WhatsAppStatus
+              isConnected={isConnected}
+              isGeneratingQR={isGeneratingQR}
+              qrCodeUrl={qrCodeUrl}
+              onGenerateQR={handleGenerateQR}
+              telefoneempresa={telefoneempresa}
+            />
 
-        <AIAgentConfig
-          prompt={prompt}
-          loading={loading}
-          onPromptChange={setPrompt}
-          onSavePrompt={handleSavePrompt}
-        />
+            <AIAgentConfig
+              prompt={prompt}
+              loading={loading}
+              onPromptChange={setPrompt}
+              onSavePrompt={handleSavePrompt}
+            />
+          </div>
+        </main>
       </div>
-    </div>
+    </SidebarProvider>
   );
 };
 
