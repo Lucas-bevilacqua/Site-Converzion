@@ -21,17 +21,6 @@ export const useAuth = () => {
       if (signInError) {
         console.error('Erro ao fazer login:', signInError);
         
-        // Verificar se o erro é devido a logins por email estarem desabilitados
-        if (signInError.message.includes('Email logins are disabled')) {
-          console.error('Logins por email estão desabilitados no Supabase');
-          toast({
-            title: "Erro de Configuração",
-            description: "O sistema de login está temporariamente indisponível. Por favor, contate o suporte.",
-            variant: "destructive",
-          });
-          return false;
-        }
-        
         // Se o erro for de credenciais inválidas, tentar criar conta
         if (signInError.message.includes('Invalid login credentials')) {
           console.log('Credenciais inválidas, tentando criar conta...');
