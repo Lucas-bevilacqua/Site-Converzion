@@ -7,7 +7,6 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -27,20 +26,18 @@ serve(async (req) => {
 
     console.log(`Fetching empresa data for ID: ${empresa_id}`)
     
-    // Create Supabase client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
     
-    // Fetch empresa data
     const { data: empresa, error: empresaError } = await supabaseClient
       .from('Empresas')
-      .select('url_instance, apikeyevo, is_connected')
+      .select('url_instance, apikeyevo')
       .eq('id', empresa_id)
       .single()
 
-    if (empresaError) {
+    if (empresaError || !empresa) {
       console.error('Error fetching empresa:', empresaError)
       return new Response(
         JSON.stringify({ error: 'Empresa não encontrada' }),
@@ -56,50 +53,50 @@ serve(async (req) => {
       )
     }
 
-    // First check if instance is already connected
-    if (empresa.is_connected) {
-      console.log('Checking instance connection state...')
-      const stateUrl = `${empresa.url_instance}/instance/connectionState`
-      
-      try {
-        const stateResponse = await fetch(stateUrl, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': empresa.apikeyevo
-          }
-        })
+    console.log('Making request to Evolution API...')
+    console.log('Evolution API URL:', empresa.url_instance)
 
-        if (!stateResponse.ok) {
-          throw new Error(`Failed to get connection state: ${stateResponse.statusText}`)
+    // Primeiro verificar o estado da conexão
+    const stateUrl = `${empresa.url_instance}/instance/connectionState`
+    console.log('Checking connection state at:', stateUrl)
+    
+    try {
+      const stateResponse = await fetch(stateUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': empresa.apikeyevo
         }
+      })
 
-        const stateData = await stateResponse.json()
-        console.log('Connection state response:', stateData)
-        
-        // According to Evolution API docs, state can be 'open' or 'connected'
-        if (stateData.state === 'open' || stateData.state === 'connected') {
-          console.log('Instance is already connected')
-          return new Response(
-            JSON.stringify({ 
-              success: true, 
-              message: 'Instância já está conectada',
-              is_connected: true 
-            }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          )
-        }
-      } catch (error) {
-        console.log('Error checking connection state:', error)
-        // Continue to QR code generation if state check fails
+      if (!stateResponse.ok) {
+        const errorText = await stateResponse.text()
+        console.error('Error response from Evolution API:', errorText)
+        throw new Error(`Evolution API returned ${stateResponse.status}: ${errorText}`)
       }
+
+      const stateData = await stateResponse.json()
+      console.log('Connection state response:', stateData)
+      
+      if (stateData.state === 'open' || stateData.state === 'connected') {
+        console.log('Instance is already connected')
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: 'Instância já está conectada',
+            is_connected: true 
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    } catch (error) {
+      console.log('Error checking connection state:', error)
+      // Continue to QR code generation if state check fails
     }
 
-    console.log('Making request to Evolution API for new QR code...')
-    
-    // Generate new QR code using the /instance/connect endpoint
+    // Gerar novo QR code
     const connectUrl = `${empresa.url_instance}/instance/connect`
-    console.log('Evolution API connect URL:', connectUrl)
+    console.log('Requesting QR code at:', connectUrl)
     
     const connectResponse = await fetch(connectUrl, {
       method: 'GET',
@@ -110,11 +107,13 @@ serve(async (req) => {
     })
 
     if (!connectResponse.ok) {
-      console.error('Error response from Evolution API:', await connectResponse.text())
+      const errorText = await connectResponse.text()
+      console.error('Error response from Evolution API:', errorText)
+      
       return new Response(
         JSON.stringify({ 
           error: 'Erro ao conectar com o Evolution API',
-          details: connectResponse.statusText 
+          details: errorText
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       )
@@ -134,7 +133,7 @@ serve(async (req) => {
       )
     }
 
-    // Update empresa with QR code and set connection status to false
+    // Atualizar empresa com o QR code
     const { error: updateError } = await supabaseClient
       .from('Empresas')
       .update({ 
