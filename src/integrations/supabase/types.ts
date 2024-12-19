@@ -45,6 +45,8 @@ export type Database = {
         Row: {
           "API Dify": string | null
           apikeyevo: string | null
+          dify_api_key: string | null
+          dify_endpoint: string | null
           id: number
           is_connected: boolean | null
           nomeempresa: string
@@ -56,6 +58,8 @@ export type Database = {
         Insert: {
           "API Dify"?: string | null
           apikeyevo?: string | null
+          dify_api_key?: string | null
+          dify_endpoint?: string | null
           id?: number
           is_connected?: boolean | null
           nomeempresa: string
@@ -67,6 +71,8 @@ export type Database = {
         Update: {
           "API Dify"?: string | null
           apikeyevo?: string | null
+          dify_api_key?: string | null
+          dify_endpoint?: string | null
           id?: number
           is_connected?: boolean | null
           nomeempresa?: string

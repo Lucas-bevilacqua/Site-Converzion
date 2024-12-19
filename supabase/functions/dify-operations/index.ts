@@ -1,125 +1,91 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { corsHeaders } from '../_shared/cors.ts'
 
-const DIFY_API_BASE_URL = "https://api.dify.ai/v1"
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
 serve(async (req) => {
-  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const { action, empresaId, prompt } = await req.json()
-    
-    // Create Supabase client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     )
 
-    if (action === 'create') {
-      console.log('Creating new Dify agent...')
-      
-      // Create new agent logic here
-      const response = await fetch(`${DIFY_API_BASE_URL}/applications`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${Deno.env.get('DIFY_API_KEY')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          name: `Agent ${empresaId}`,
-          mode: 'completion',
-          opening_statement: prompt || "Hello! How can I help you today?"
-        })
-      })
+    const { action, empresaId, prompt } = await req.json()
 
-      if (!response.ok) {
-        const error = await response.json()
-        console.error('Error creating Dify agent:', error)
-        throw new Error(`Failed to create Dify agent: ${error.message}`)
-      }
-
-      const data = await response.json()
-      
-      // Update empresa with Dify API key
-      const { error: updateError } = await supabaseClient
-        .from('empresas')
-        .update({ 'API Dify': data.api_key })
-        .eq('id', empresaId)
-
-      if (updateError) {
-        console.error('Error updating empresa:', updateError)
-        throw updateError
-      }
-
-      return new Response(
-        JSON.stringify({ success: true, data }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-
-    } else if (action === 'update') {
-      console.log('Updating Dify agent prompt...')
-      
-      // Get empresa Dify API key
-      const { data: empresa, error: fetchError } = await supabaseClient
-        .from('empresas')
-        .select('API Dify')
-        .eq('id', empresaId)
-        .single()
-
-      if (fetchError || !empresa) {
-        console.error('Error fetching empresa:', fetchError)
-        throw new Error('Empresa not found')
-      }
-
-      // Update agent prompt
-      const response = await fetch(`${DIFY_API_BASE_URL}/parameters`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${empresa['API Dify']}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          opening_statement: prompt
-        })
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        console.error('Error updating Dify prompt:', error)
-        throw new Error(`Failed to update Dify prompt: ${error.message}`)
-      }
-
-      // Update prompt in database
-      const { error: updateError } = await supabaseClient
-        .from('empresas')
-        .update({ prompt })
-        .eq('id', empresaId)
-
-      if (updateError) {
-        console.error('Error updating prompt in database:', updateError)
-        throw updateError
-      }
-
-      return new Response(
-        JSON.stringify({ success: true }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+    if (!empresaId) {
+      throw new Error('empresaId is required')
     }
 
-    throw new Error('Invalid action')
+    // Buscar as configurações da empresa
+    const { data: empresa, error: empresaError } = await supabaseClient
+      .from('empresas')
+      .select('dify_api_key, dify_endpoint')
+      .eq('id', empresaId)
+      .single()
 
+    if (empresaError || !empresa) {
+      throw new Error('Empresa não encontrada ou erro ao buscar configurações')
+    }
+
+    const { dify_api_key, dify_endpoint } = empresa
+
+    if (!dify_api_key || !dify_endpoint) {
+      throw new Error('Configurações do Dify não encontradas para esta empresa')
+    }
+
+    switch (action) {
+      case 'update':
+        // Atualizar o prompt usando as credenciais específicas da empresa
+        const response = await fetch(`${dify_endpoint}/prompts`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${dify_api_key}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ prompt }),
+        })
+
+        if (!response.ok) {
+          throw new Error('Falha ao atualizar o prompt no Dify')
+        }
+
+        // Atualizar o prompt no banco de dados
+        const { error: updateError } = await supabaseClient
+          .from('empresas')
+          .update({ prompt })
+          .eq('id', empresaId)
+
+        if (updateError) {
+          throw updateError
+        }
+
+        break
+
+      default:
+        throw new Error('Ação inválida')
+    }
+
+    return new Response(
+      JSON.stringify({ message: 'Operação realizada com sucesso' }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      },
+    )
   } catch (error) {
-    console.error('Error in dify-operations:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
+      },
     )
   }
 })

@@ -4,6 +4,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import DifyConfig from "./DifyConfig";
+import { useState } from "react";
 
 interface AIAgentConfigProps {
   prompt: string;
@@ -11,10 +13,22 @@ interface AIAgentConfigProps {
   onPromptChange: (value: string) => void;
   onSavePrompt: () => void;
   empresaId?: number;
+  difyApiKey?: string;
+  difyEndpoint?: string;
 }
 
-const AIAgentConfig = ({ prompt, loading, onPromptChange, onSavePrompt, empresaId }: AIAgentConfigProps) => {
+const AIAgentConfig = ({ 
+  prompt, 
+  loading, 
+  onPromptChange, 
+  onSavePrompt, 
+  empresaId,
+  difyApiKey = "",
+  difyEndpoint = ""
+}: AIAgentConfigProps) => {
   const { toast } = useToast();
+  const [apiKey, setApiKey] = useState(difyApiKey);
+  const [endpoint, setEndpoint] = useState(difyEndpoint);
 
   const handleSavePrompt = async () => {
     if (!empresaId) {
@@ -54,34 +68,46 @@ const AIAgentConfig = ({ prompt, loading, onPromptChange, onSavePrompt, empresaI
   };
 
   return (
-    <Card className="p-6 space-y-4">
-      <h2 className="text-xl font-semibold text-foreground">Configuração do Agente IA</h2>
-      <p className="text-muted-foreground">
-        Configure o prompt que seu agente IA utilizará para interagir com seus clientes.
-      </p>
-      
-      <div className="space-y-2">
-        <label htmlFor="prompt" className="text-sm font-medium text-foreground">
-          Prompt do Agente
-        </label>
-        <Textarea
-          id="prompt"
-          value={prompt}
-          onChange={(e) => onPromptChange(e.target.value)}
-          placeholder="Digite aqui o prompt para seu agente IA..."
-          className="min-h-[200px]"
-        />
-      </div>
+    <div className="space-y-6">
+      <DifyConfig
+        apiKey={apiKey}
+        endpoint={endpoint}
+        loading={loading}
+        onApiKeyChange={setApiKey}
+        onEndpointChange={setEndpoint}
+        onSaveConfig={onSavePrompt}
+        empresaId={empresaId}
+      />
 
-      <Button 
-        onClick={handleSavePrompt} 
-        disabled={loading}
-        className="w-full sm:w-auto"
-      >
-        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        Salvar Prompt
-      </Button>
-    </Card>
+      <Card className="p-6 space-y-4">
+        <h2 className="text-xl font-semibold text-foreground">Configuração do Prompt</h2>
+        <p className="text-muted-foreground">
+          Configure o prompt que seu agente IA utilizará para interagir com seus clientes.
+        </p>
+        
+        <div className="space-y-2">
+          <label htmlFor="prompt" className="text-sm font-medium text-foreground">
+            Prompt do Agente
+          </label>
+          <Textarea
+            id="prompt"
+            value={prompt}
+            onChange={(e) => onPromptChange(e.target.value)}
+            placeholder="Digite aqui o prompt para seu agente IA..."
+            className="min-h-[200px]"
+          />
+        </div>
+
+        <Button 
+          onClick={handleSavePrompt} 
+          disabled={loading}
+          className="w-full sm:w-auto"
+        >
+          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Salvar Prompt
+        </Button>
+      </Card>
+    </div>
   );
 };
 
