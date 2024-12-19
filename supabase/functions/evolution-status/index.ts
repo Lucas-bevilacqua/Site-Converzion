@@ -54,17 +54,21 @@ serve(async (req) => {
     if (!empresa.url_instance || !empresa.apikeyevo || !empresa.instance_name) {
       console.error('Credenciais da Evolution incompletas')
       return new Response(
-        JSON.stringify({ error: 'Credenciais do Evolution não configuradas' }),
+        JSON.stringify({ 
+          error: 'Credenciais do Evolution não configuradas',
+          needsSetup: true 
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
     }
 
-    // Clean up the URL to ensure it's just the base URL
+    // Clean up the URL
     const baseUrl = empresa.url_instance.split('/message')[0].replace(/\/+$/, '')
     console.log('URL base da instância:', baseUrl)
 
     try {
-      // Check instance status
+      // Requisição 1: Verifica status da instância
+      console.log('Verificando status da instância:', empresa.instance_name)
       const statusResponse = await fetch(`${baseUrl}/instance/connectionState/${empresa.instance_name}`, {
         headers: {
           'Content-Type': 'application/json',
@@ -76,7 +80,6 @@ serve(async (req) => {
         const errorText = await statusResponse.text()
         console.error('Erro na resposta do Evolution:', errorText)
         
-        // If instance doesn't exist, return specific error
         if (statusResponse.status === 404) {
           return new Response(
             JSON.stringify({ error: 'Instância não encontrada', needsSetup: true }),

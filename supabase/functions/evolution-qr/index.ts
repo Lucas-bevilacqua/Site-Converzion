@@ -64,7 +64,8 @@ serve(async (req) => {
     console.log('URL base da instância:', baseUrl)
 
     try {
-      // First check if instance exists
+      // Requisição 1: Verifica se a instância existe
+      console.log('Verificando se a instância existe:', empresa.instance_name)
       const statusResponse = await fetch(`${baseUrl}/instance/connectionState/${empresa.instance_name}`, {
         headers: {
           'Content-Type': 'application/json',
@@ -72,9 +73,11 @@ serve(async (req) => {
         }
       })
 
-      // If instance doesn't exist, create it
+      // Se a instância não existir, cria uma nova
       if (statusResponse.status === 404) {
         console.log('Instância não existe, criando nova...')
+        
+        // Requisição 2: Cria nova instância
         const createResponse = await fetch(`${baseUrl}/instance/create`, {
           method: 'POST',
           headers: {
@@ -93,7 +96,7 @@ serve(async (req) => {
         }
       }
 
-      // Now connect/reconnect the instance
+      // Requisição 3: Conecta/reconecta a instância
       console.log('Conectando à instância:', empresa.instance_name)
       const connectResponse = await fetch(`${baseUrl}/instance/connect`, {
         method: 'POST',
