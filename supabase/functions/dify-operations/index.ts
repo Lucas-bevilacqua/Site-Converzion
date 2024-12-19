@@ -42,6 +42,9 @@ serve(async (req) => {
 
     switch (action) {
       case 'update':
+        console.log('Atualizando prompt para empresa:', empresaId)
+        console.log('Novo prompt:', prompt)
+        
         // Atualizar o prompt usando as credenciais específicas da empresa
         const response = await fetch(`${dify_endpoint}/prompts`, {
           method: 'PUT',
@@ -53,8 +56,11 @@ serve(async (req) => {
         })
 
         if (!response.ok) {
+          console.error('Erro ao atualizar prompt no Dify:', await response.text())
           throw new Error('Falha ao atualizar o prompt no Dify')
         }
+
+        console.log('Prompt atualizado com sucesso no Dify')
 
         // Atualizar o prompt no banco de dados
         const { error: updateError } = await supabaseClient
@@ -63,9 +69,11 @@ serve(async (req) => {
           .eq('id', empresaId)
 
         if (updateError) {
+          console.error('Erro ao atualizar prompt no banco:', updateError)
           throw updateError
         }
 
+        console.log('Prompt atualizado com sucesso no banco de dados')
         break
 
       default:
@@ -80,6 +88,7 @@ serve(async (req) => {
       },
     )
   } catch (error) {
+    console.error('Erro na operação:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
