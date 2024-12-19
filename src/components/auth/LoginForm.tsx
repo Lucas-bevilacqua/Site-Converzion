@@ -12,12 +12,23 @@ export const LoginForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Iniciando submissão do formulário...');
+    console.log('Iniciando submissão do formulário com email:', email);
     
+    if (!email || !senha) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha todos os campos.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
+      console.log('Tentando autenticar usuário...');
       const success = await handleEmailSignIn(email, senha, 1);
+      
       if (success) {
-        console.log('Redirecionando para dashboard após login bem-sucedido');
+        console.log('Login bem-sucedido, redirecionando...');
         toast({
           title: "Login bem-sucedido",
           description: "Você será redirecionado para o dashboard.",
@@ -30,9 +41,11 @@ export const LoginForm = () => {
       let errorMessage = "Ocorreu um erro durante o login. Por favor, tente novamente.";
       
       if (error.message?.includes('Invalid login credentials')) {
-        errorMessage = "Email ou senha incorretos.";
-      } else if (error.message?.includes('User already registered')) {
-        errorMessage = "Este email já está registrado. Por favor, faça login.";
+        errorMessage = "Email ou senha incorretos. Se você não possui uma conta, uma será criada automaticamente.";
+      } else if (error.message?.includes('Email not confirmed')) {
+        errorMessage = "Por favor, confirme seu email antes de fazer login.";
+      } else if (error.message?.includes('Email logins are disabled')) {
+        errorMessage = "Login por email está desabilitado. Por favor, contate o suporte.";
       }
       
       toast({
