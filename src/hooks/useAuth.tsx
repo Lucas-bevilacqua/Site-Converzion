@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { removeExistingEmpresa, createEmpresa } from "@/services/auth/empresa.service";
+import { createEmpresa } from "@/services/auth/empresa.service";
 import { signUpUser, signInUser } from "@/services/auth/auth.service";
 
 export const useAuth = () => {
@@ -28,12 +28,6 @@ export const useAuth = () => {
       // Se o login falhar, tenta criar uma nova conta
       console.log('🆕 Tentando criar nova conta...');
       
-      // Remove empresa existente
-      const { error: removeError } = await removeExistingEmpresa(email);
-      if (removeError) {
-        console.log('⚠️ Erro ao tentar remover empresa:', removeError);
-      }
-
       // Tenta criar nova conta
       const { success: signUpSuccess, error: signUpError } = await signUpUser(email, senha, empresa_id);
       
@@ -46,7 +40,7 @@ export const useAuth = () => {
         return false;
       }
 
-      // Cria nova empresa
+      // Cria nova empresa apenas se não existir
       const { error: createEmpresaError } = await createEmpresa({
         id: empresa_id,
         emailempresa: email,
