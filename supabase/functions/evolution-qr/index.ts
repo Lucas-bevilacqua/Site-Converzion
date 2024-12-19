@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { instance_url } = await req.json()
+    const { instance_url, empresa_id } = await req.json()
     
     if (!instance_url) {
       console.error('URL da instância não fornecida')
@@ -27,24 +27,46 @@ serve(async (req) => {
 
     // First create the instance
     console.log('🔄 Criando nova instância...', instance_url)
+
+    // Get the API key from the database for this empresa
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Missing Supabase environment variables')
+    }
+
+    const supabaseClient = createClient(supabaseUrl, supabaseKey)
+    
+    const { data: empresa, error: empresaError } = await supabaseClient
+      .from('Empresas')
+      .select('apikeyevo')
+      .eq('id', empresa_id)
+      .single()
+
+    if (empresaError || !empresa?.apikeyevo) {
+      console.error('API key not found for empresa:', empresaError)
+      throw new Error('API key not found for empresa')
+    }
+
+    const headers = {
+      'Content-Type': 'application/json',
+      'apikey': empresa.apikeyevo
+    }
+
+    // Create instance with updated parameters according to v2.2 docs
     const createInstanceResponse = await fetch(`${instance_url}/instance/create`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({
         instanceName: "instance1",
         qrcode: true,
-        number: null,
+        integration: "WHATSAPP-BAILEYS",
         token: null,
+        number: null,
         webhook: null,
         webhookByEvents: false,
-        events: [],
-        // Evolution API v2.2.0 required parameters
-        isLatest: true,
-        waitQrCode: true,
-        license: "free",
-        connectionType: "WHATSAPP-BAILEYS"
+        events: []
       })
     })
 
@@ -57,13 +79,11 @@ serve(async (req) => {
     const createData = await createInstanceResponse.json()
     console.log('✅ Instância criada:', createData)
 
-    // Then connect the instance to get the QR code
+    // Connect instance to get QR code
     console.log('🔄 Conectando instância para gerar QR code...')
     const connectResponse = await fetch(`${instance_url}/instance/connect`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({
         instanceName: "instance1",
         qrcode: true,
@@ -71,13 +91,7 @@ serve(async (req) => {
         token: null,
         webhook: null,
         webhookByEvents: false,
-        events: [],
-        // Evolution API v2.2.0 required parameters
-        client: "evolution_v2",
-        version: "2.2.0",
-        waitQrCode: true,
-        license: "free",
-        connectionType: "WHATSAPP-BAILEYS"
+        events: []
       })
     })
 
