@@ -24,29 +24,36 @@ serve(async (req) => {
       )
     }
 
-    // Remove trailing slash if present
-    const baseUrl = instance_url.replace(/\/$/, '')
-    console.log('🔄 Verificando estado da conexão em:', baseUrl)
-
-    const stateResponse = await fetch(`${baseUrl}/instance/connectionState`, {
-      method: 'GET',
+    // First create the instance
+    console.log('🔄 Criando nova instância...')
+    const createInstanceResponse = await fetch(`${instance_url}/instance/create`, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify({
+        instanceName: "instance1",
+        webhook: null,
+        webhookByEvents: false,
+        events: [],
+        qrcode: true,
+        number: null,
+        token: null
+      })
     })
 
-    const stateData = await stateResponse.json()
-    console.log('📱 Estado da conexão:', stateData)
-
-    if (stateData.state === 'open') {
-      return new Response(
-        JSON.stringify({ message: 'Instance already connected' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+    if (!createInstanceResponse.ok) {
+      const errorData = await createInstanceResponse.json()
+      console.error('❌ Erro ao criar instância:', errorData)
+      throw new Error(`Erro ao criar instância: ${JSON.stringify(errorData)}`)
     }
 
-    console.log('🔄 Iniciando nova conexão...')
-    const connectResponse = await fetch(`${baseUrl}/instance/connect`, {
+    const createData = await createInstanceResponse.json()
+    console.log('✅ Instância criada:', createData)
+
+    // Then connect the instance to get the QR code
+    console.log('🔄 Conectando instância...')
+    const connectResponse = await fetch(`${instance_url}/instance/connect`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -66,15 +73,15 @@ serve(async (req) => {
 
     if (!connectResponse.ok) {
       const errorData = await connectResponse.json()
-      console.error('❌ Erro na conexão:', errorData)
-      throw new Error(`Erro ao conectar com o Evolution API: ${JSON.stringify(errorData)}`)
+      console.error('❌ Erro ao conectar instância:', errorData)
+      throw new Error(`Erro ao conectar instância: ${JSON.stringify(errorData)}`)
     }
 
-    const data = await connectResponse.json()
-    console.log('✅ Resposta da conexão:', data)
+    const connectData = await connectResponse.json()
+    console.log('✅ Instância conectada:', connectData)
 
     return new Response(
-      JSON.stringify(data),
+      JSON.stringify(connectData),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 

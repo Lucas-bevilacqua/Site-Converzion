@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
 
 interface WhatsAppStatusProps {
   isConnected: boolean;
@@ -20,6 +21,22 @@ export const WhatsAppStatus = ({
   telefoneempresa 
 }: WhatsAppStatusProps) => {
   const { toast } = useToast();
+
+  // Poll for QR code updates every 20 seconds if not connected
+  useEffect(() => {
+    if (isConnected || !qrCodeUrl) return;
+
+    const interval = setInterval(async () => {
+      try {
+        console.log('🔄 Atualizando QR code...');
+        await onGenerateQR();
+      } catch (error) {
+        console.error('❌ Erro ao atualizar QR code:', error);
+      }
+    }, 20000);
+
+    return () => clearInterval(interval);
+  }, [isConnected, qrCodeUrl, onGenerateQR]);
 
   const handleGenerateQR = async () => {
     try {
