@@ -60,6 +60,27 @@ const Login = () => {
       // Se o login falhar, verificar se é porque o usuário não existe
       if (signInError) {
         console.log('Login falhou, tentando criar usuário:', signInError);
+        
+        // Tentar reenviar email de confirmação primeiro
+        const { data: resendData, error: resendError } = await supabase.auth.resend({
+          type: 'signup',
+          email,
+          options: {
+            emailRedirectTo: `${window.location.origin}/login`
+          }
+        });
+
+        if (!resendError) {
+          console.log('Email de confirmação reenviado com sucesso');
+          toast({
+            title: "Email Reenviado",
+            description: "Um novo email de confirmação foi enviado. Por favor, verifique sua caixa de entrada e spam.",
+          });
+          setLoading(false);
+          return;
+        }
+
+        // Se não conseguiu reenviar, tentar criar um novo usuário
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password: senha,
@@ -84,10 +105,9 @@ const Login = () => {
         
         console.log('Usuário criado com sucesso:', signUpData);
         
-        // Mostrar mensagem de confirmação de email
         toast({
           title: "Sucesso",
-          description: "Um email de confirmação foi enviado. Por favor, verifique sua caixa de entrada e confirme seu email antes de fazer login.",
+          description: "Um email de confirmação foi enviado. Por favor, verifique sua caixa de entrada e pasta de spam. Se não receber em alguns minutos, tente fazer login novamente para reenviar o email.",
         });
         setLoading(false);
         return;
@@ -97,9 +117,25 @@ const Login = () => {
       // Verificar se o email foi confirmado
       if (!signInData.user?.email_confirmed_at) {
         console.log('Email ainda não confirmado');
+        
+        // Tentar reenviar o email de confirmação
+        const { error: resendError } = await supabase.auth.resend({
+          type: 'signup',
+          email,
+          options: {
+            emailRedirectTo: `${window.location.origin}/login`
+          }
+        });
+
+        if (resendError) {
+          console.error('Erro ao reenviar email:', resendError);
+        } else {
+          console.log('Email de confirmação reenviado');
+        }
+
         toast({
           title: "Erro",
-          description: "Por favor, confirme seu email antes de fazer login. Verifique sua caixa de entrada.",
+          description: "Por favor, confirme seu email antes de fazer login. Um novo email de confirmação foi enviado. Verifique também sua pasta de spam.",
           variant: "destructive",
         });
         setLoading(false);
