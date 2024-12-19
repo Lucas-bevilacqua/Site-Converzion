@@ -109,9 +109,12 @@ export default function Dashboard() {
         body: JSON.stringify({ empresa_id: empresaId }),
       });
 
-      if (!response.ok) throw new Error('Failed to generate QR code');
-
       const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to generate QR code');
+      }
+
       console.log('QR code generated:', data);
       
       if (data.qr_code) {
@@ -121,13 +124,9 @@ export default function Dashboard() {
           description: "Escaneie o QR Code para conectar seu WhatsApp.",
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating QR code:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível gerar o QR Code.",
-        variant: "destructive",
-      });
+      throw error; // Let the WhatsAppStatus component handle the error
     } finally {
       setIsGeneratingQR(false);
     }

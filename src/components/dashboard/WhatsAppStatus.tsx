@@ -31,11 +31,19 @@ export const WhatsAppStatus = ({
         return;
       }
       await onGenerateQR();
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error generating QR code:', error);
+      let errorMessage = "Não foi possível gerar o QR code";
+      
+      // If we have details from the API response, show them
+      if (error.details) {
+        errorMessage += `: ${error.details}`;
+      }
+      
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Não foi possível gerar o QR code"
+        description: errorMessage
       });
     }
   };
