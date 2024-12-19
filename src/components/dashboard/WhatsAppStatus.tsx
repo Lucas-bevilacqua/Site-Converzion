@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+// Removendo a interface de props já que o componente gerencia seu próprio estado
 export const WhatsAppStatus = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [qrCode, setQrCode] = useState<string | null>(null);

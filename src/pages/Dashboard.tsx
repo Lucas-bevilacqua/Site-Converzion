@@ -13,10 +13,6 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [empresaId, setEmpresaId] = useState<number | null>(null);
   const [prompt, setPrompt] = useState("");
-  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
-  const [isGeneratingQR, setIsGeneratingQR] = useState(false);
-  const [telefoneempresa, setTelefoneempresa] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
@@ -32,7 +28,7 @@ export default function Dashboard() {
       console.log('Loading empresa data for:', session.user.email);
       const { data: empresa, error } = await supabase
         .from('Empresas')
-        .select('id, prompt, qr_code_url, is_connected, telefoneempresa, is_admin')
+        .select('id, prompt, is_admin')
         .eq('emailempresa', session.user.email)
         .single();
 
@@ -49,15 +45,11 @@ export default function Dashboard() {
       if (empresa) {
         console.log('Empresa data loaded:', { 
           id: empresa.id, 
-          hasPrompt: !!empresa.prompt, 
-          hasQR: !!empresa.qr_code_url,
+          hasPrompt: !!empresa.prompt,
           isAdmin: empresa.is_admin
         });
         setEmpresaId(empresa.id);
         setPrompt(empresa.prompt || "");
-        setQrCodeUrl(empresa.qr_code_url);
-        setIsConnected(empresa.is_connected || false);
-        setTelefoneempresa(empresa.telefoneempresa);
         setIsAdmin(empresa.is_admin || false);
       }
     };
@@ -94,57 +86,13 @@ export default function Dashboard() {
     setLoading(false);
   };
 
-  const handleGenerateQR = async () => {
-    if (!empresaId) return;
-
-    setIsGeneratingQR(true);
-    console.log('Generating QR code for empresa:', empresaId);
-
-    try {
-      const response = await fetch('/api/evolution-qr', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ empresa_id: empresaId }),
-      });
-
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to generate QR code');
-      }
-
-      console.log('QR code generated:', data);
-      
-      if (data.qr_code) {
-        setQrCodeUrl(data.qr_code);
-        toast({
-          title: "QR Code Gerado",
-          description: "Escaneie o QR Code para conectar seu WhatsApp.",
-        });
-      }
-    } catch (error: any) {
-      console.error('Error generating QR code:', error);
-      throw error; // Let the WhatsAppStatus component handle the error
-    } finally {
-      setIsGeneratingQR(false);
-    }
-  };
-
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
         <DashboardSidebar />
         <main className="flex-1 p-6">
           <div className="max-w-4xl mx-auto space-y-8">
-            <WhatsAppStatus
-              isConnected={isConnected}
-              qrCodeUrl={qrCodeUrl}
-              isGeneratingQR={isGeneratingQR}
-              onGenerateQR={handleGenerateQR}
-              telefoneempresa={telefoneempresa}
-            />
+            <WhatsAppStatus />
 
             <AIAgentConfig
               prompt={prompt}
