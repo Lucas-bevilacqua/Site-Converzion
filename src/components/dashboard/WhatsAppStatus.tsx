@@ -67,8 +67,8 @@ export const WhatsAppStatus = ({
           .eq('id', 8) // TODO: Use dynamic empresa ID
           .single();
 
-        if (empresaError || !empresa?.url_instance) {
-          console.error('Erro ao buscar URL da instância:', empresaError);
+        if (empresaError || !empresa?.url_instance || !empresa?.apikeyevo) {
+          console.error('Erro ao buscar dados da empresa:', empresaError);
           return;
         }
 
@@ -147,16 +147,16 @@ export const WhatsAppStatus = ({
       
       const { data: empresa, error: empresaError } = await supabase
         .from('Empresas')
-        .select('url_instance, instance_name')
+        .select('url_instance, instance_name, apikeyevo')
         .eq('id', 8) // TODO: Use dynamic empresa ID
         .single();
 
-      if (empresaError || !empresa?.url_instance) {
-        console.error('Erro ao buscar URL da instância:', empresaError);
+      if (empresaError || !empresa?.url_instance || !empresa?.apikeyevo) {
+        console.error('Erro ao buscar dados da empresa:', empresaError);
         toast({
           variant: "destructive",
           title: "Erro",
-          description: "URL da instância não configurada. Configure a URL da instância nas configurações."
+          description: "Credenciais da Evolution não configuradas. Configure as credenciais nas configurações."
         });
         return;
       }
