@@ -58,8 +58,11 @@ serve(async (req) => {
 
     console.log('Making request to Evolution API...')
     
-    // Make request to Evolution API
-    const evolutionResponse = await fetch(`${empresa.url_instance}/start-session`, {
+    // Make request to Evolution API - Fixed URL construction
+    const evolutionUrl = `${empresa.url_instance}/start-session`
+    console.log('Evolution API URL:', evolutionUrl)
+    
+    const evolutionResponse = await fetch(evolutionUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
