@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export const LoginForm = () => {
   const [email, setEmail] = useState("");
@@ -27,14 +28,38 @@ export const LoginForm = () => {
       return;
     }
 
-    console.log('✨ Tentando login/cadastro');
-    const success = await handleEmailSignIn(email, password, Date.now());
-    
-    if (success) {
-      console.log('🎉 Login/cadastro bem-sucedido, redirecionando...');
-      window.location.href = "/dashboard";
-    } else {
-      console.log('❌ Login/cadastro falhou');
+    try {
+      console.log('✨ Tentando login/cadastro');
+      const success = await handleEmailSignIn(email, password, Date.now());
+      
+      if (success) {
+        console.log('🎉 Login/cadastro bem-sucedido');
+        
+        // Verifica a sessão atual
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('❌ Erro ao verificar sessão:', sessionError);
+          throw sessionError;
+        }
+
+        if (!session) {
+          console.error('❌ Sessão não encontrada após login');
+          throw new Error('Sessão não encontrada após login');
+        }
+
+        console.log('✅ Sessão verificada, redirecionando...');
+        window.location.href = "/dashboard";
+      } else {
+        console.log('❌ Login/cadastro falhou');
+      }
+    } catch (error) {
+      console.error('❌ Erro durante autenticação:', error);
+      toast({
+        title: "Erro na autenticação",
+        description: "Ocorreu um erro durante o login. Por favor, tente novamente.",
+        variant: "destructive",
+      });
     }
   };
 
