@@ -18,27 +18,45 @@ export const EvolutionSettingsForm = () => {
 
   const loadEvolutionSettings = async () => {
     try {
+      console.log('🔄 Carregando configurações do Evolution...');
+      
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user?.email) return;
+      if (!session?.user?.email) {
+        console.log('❌ Usuário não autenticado');
+        return;
+      }
 
       const { data: empresa, error } = await supabase
         .from('Empresas')
         .select('url_instance, apikeyevo, instance_name')
         .eq('emailempresa', session.user.email)
-        .single();
+        .maybeSingle();
 
       if (error) {
-        console.error('Erro ao carregar configurações:', error);
+        console.error('❌ Erro ao carregar configurações:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar as configurações",
+          variant: "destructive",
+        });
         return;
       }
 
       if (empresa) {
+        console.log('✅ Configurações carregadas com sucesso');
         setEvolutionUrl(empresa.url_instance || '');
         setEvolutionApiKey(empresa.apikeyevo || '');
         setEvolutionInstance(empresa.instance_name || '');
+      } else {
+        console.log('ℹ️ Nenhuma configuração encontrada para este usuário');
       }
     } catch (error) {
-      console.error('Erro ao carregar configurações:', error);
+      console.error('❌ Erro ao carregar configurações:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar configurações",
+        variant: "destructive",
+      });
     }
   };
 
@@ -69,7 +87,7 @@ export const EvolutionSettingsForm = () => {
         .eq('emailempresa', session.user.email);
 
       if (error) {
-        console.error('Erro ao salvar configurações:', error);
+        console.error('❌ Erro ao salvar configurações:', error);
         toast({
           title: "Erro",
           description: "Não foi possível salvar as configurações",
@@ -82,7 +100,7 @@ export const EvolutionSettingsForm = () => {
         });
       }
     } catch (error) {
-      console.error('Erro ao salvar configurações:', error);
+      console.error('❌ Erro ao salvar configurações:', error);
       toast({
         title: "Erro",
         description: "Erro ao salvar configurações",
