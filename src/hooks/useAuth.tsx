@@ -48,7 +48,8 @@ export const useAuth = () => {
         id: empresa_id,
         emailempresa: email,
         senha: senha,
-        NomeEmpresa: 'Nova Empresa'
+        // Ensure instance name is URL-safe by removing spaces and special characters
+        NomeEmpresa: email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '')
       });
 
       if (createEmpresaError) {
