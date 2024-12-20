@@ -40,7 +40,7 @@ serve(async (req) => {
     console.log('🔍 Buscando dados da empresa:', email)
     const { data: empresa, error: empresaError } = await supabaseClient
       .from('Empresas')
-      .select('url_instance, instance_name, apikeyevo')
+      .select('url_instance, instance_name, apikeyevo, is_connected')
       .eq('emailempresa', email)
       .single()
 
@@ -55,7 +55,10 @@ serve(async (req) => {
     if (!empresa.url_instance || !empresa.apikeyevo || !empresa.instance_name) {
       console.error('❌ Credenciais da Evolution incompletas')
       return new Response(
-        JSON.stringify({ error: 'Credenciais do Evolution não configuradas' }),
+        JSON.stringify({ 
+          error: 'Credenciais do Evolution não configuradas',
+          needsSetup: true 
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
     }
@@ -77,27 +80,45 @@ serve(async (req) => {
         }
       })
 
+      const responseText = await statusResponse.text()
+      console.log('📡 Response status:', statusResponse.status)
+      console.log('📡 Response text:', responseText)
+
       if (!statusResponse.ok) {
-        const errorText = await statusResponse.text()
-        console.error('❌ Erro ao verificar status:', errorText)
+        let needsSetup = false
         
-        // Check if instance doesn't exist
-        if (statusResponse.status === 404) {
-          return new Response(
-            JSON.stringify({
-              error: 'Erro ao verificar status do Evolution',
-              details: errorText,
-              needsSetup: true,
-              requestUrl: `${baseUrl}/instance/connectionState/${instanceName}`
-            }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
-          )
+        // Parse the response text to check for specific error messages
+        try {
+          const errorData = JSON.parse(responseText)
+          if (errorData.response?.message?.[0]?.includes('instance does not exist')) {
+            needsSetup = true
+          }
+        } catch (parseError) {
+          console.error('❌ Erro ao parsear resposta:', parseError)
         }
 
-        throw new Error(`Evolution API returned ${statusResponse.status}: ${errorText}`)
+        // Update connection status to false since there was an error
+        await supabaseClient
+          .from('Empresas')
+          .update({ is_connected: false })
+          .eq('emailempresa', email)
+
+        return new Response(
+          JSON.stringify({
+            error: 'Erro ao verificar status do Evolution',
+            details: JSON.stringify({
+              status: statusResponse.status,
+              error: statusResponse.statusText,
+              response: responseText ? JSON.parse(responseText) : null
+            }),
+            needsSetup,
+            requestUrl: `${baseUrl}/instance/connectionState/${instanceName}`
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: statusResponse.status }
+        )
       }
 
-      const statusData = await statusResponse.json()
+      const statusData = JSON.parse(responseText)
       console.log('✅ Status verificado com sucesso:', statusData)
 
       // Update connection status in database
@@ -111,14 +132,21 @@ serve(async (req) => {
       }
 
       return new Response(
-        JSON.stringify(statusData),
+        JSON.stringify({
+          ...statusData,
+          isConnected: statusData.state === 'open',
+          needsSetup: false
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
 
     } catch (error) {
       console.error('❌ Erro ao verificar status:', error)
       return new Response(
-        JSON.stringify({ error: `Erro ao verificar status: ${error.message}` }),
+        JSON.stringify({ 
+          error: `Erro ao verificar status: ${error.message}`,
+          needsSetup: true 
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       )
     }
