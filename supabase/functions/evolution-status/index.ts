@@ -74,7 +74,7 @@ serve(async (req) => {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'apikey': empresa.apikeyevo
+          'apikey': empresa.apikeyevo // Adicionando a API key no header
         }
       })
 
