@@ -2,9 +2,20 @@ project_id = "navbvwimzfakdzwwzajk"
 
 [api]
 enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
 
-[functions]
-[functions.evolution-status]
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+
+[[functions]]
+name = "evolution-status"
 verify_jwt = false
-[functions.evolution-qr]
+
+[[functions]]
+name = "evolution-qr"
 verify_jwt = false

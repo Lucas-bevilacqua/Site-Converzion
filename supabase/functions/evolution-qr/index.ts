@@ -62,6 +62,7 @@ serve(async (req) => {
 
     // Clean up the URL and instance name
     const baseUrl = empresa.url_instance.split('/message')[0].replace(/\/+$/, '')
+    // Garantir que o nome da instância seja codificado corretamente para URL
     const instanceName = encodeURIComponent(empresa.instance_name.trim())
     
     console.log('🌐 Gerando QR code para instância:', instanceName)
