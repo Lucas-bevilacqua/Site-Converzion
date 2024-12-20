@@ -7,6 +7,7 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -22,11 +23,12 @@ serve(async (req) => {
       )
     }
 
+    // Get Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     
     if (!supabaseUrl || !supabaseKey) {
-      console.error('❌ Variáveis de ambiente do Supabase não encontradas')
+      console.error('❌ Missing Supabase environment variables')
       return new Response(
         JSON.stringify({ error: 'Configuração do servidor incompleta' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
