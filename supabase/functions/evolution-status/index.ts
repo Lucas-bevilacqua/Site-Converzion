@@ -64,14 +64,15 @@ serve(async (req) => {
     }
 
     // Clean up the URL and instance name
-    const baseUrl = empresa.url_instance.split('/message')[0].replace(/\/+$/, '')
-    const instanceName = empresa.instance_name.trim().replace(/\s+/g, '_')
+    const baseUrl = empresa.url_instance.trim().replace(/\/+$/, '')
+    const instanceName = empresa.instance_name.trim().replace(/[^a-zA-Z0-9_]/g, '_')
     
-    console.log('🌐 Verificando status da instância:', instanceName)
-    console.log('🔑 Usando API Key:', empresa.apikeyevo)
+    console.log('🌐 Base URL:', baseUrl)
+    console.log('🔑 Instance Name:', instanceName)
 
     try {
-      // First, try to create the instance if it doesn't exist
+      // First attempt to create the instance
+      console.log('📝 Tentando criar instância...')
       const createResponse = await fetch(`${baseUrl}/instance/create`, {
         method: 'POST',
         headers: {
@@ -85,9 +86,15 @@ serve(async (req) => {
         })
       })
 
-      console.log('📡 Create instance response:', createResponse.status)
+      console.log('📡 Create response status:', createResponse.status)
+      const createResponseText = await createResponse.text()
+      console.log('📡 Create response:', createResponseText)
+
+      // Wait a bit to ensure instance is registered
+      await new Promise(resolve => setTimeout(resolve, 1000))
       
       // Now check the connection state
+      console.log('🔍 Verificando estado da conexão...')
       const statusResponse = await fetch(`${baseUrl}/instance/connectionState/${instanceName}`, {
         method: 'GET',
         headers: {
@@ -96,22 +103,13 @@ serve(async (req) => {
         }
       })
 
-      const responseText = await statusResponse.text()
+      const statusResponseText = await statusResponse.text()
       console.log('📡 Status response:', statusResponse.status)
-      console.log('📡 Response text:', responseText)
+      console.log('📡 Status response text:', statusResponseText)
 
       if (!statusResponse.ok) {
-        let needsSetup = false
+        console.error('❌ Erro na resposta do status:', statusResponse.status)
         
-        try {
-          const errorData = JSON.parse(responseText)
-          if (errorData.response?.message?.[0]?.includes('instance does not exist')) {
-            needsSetup = true
-          }
-        } catch (parseError) {
-          console.error('❌ Erro ao parsear resposta:', parseError)
-        }
-
         // Update connection status to false since there was an error
         await supabaseClient
           .from('Empresas')
@@ -124,16 +122,16 @@ serve(async (req) => {
             details: JSON.stringify({
               status: statusResponse.status,
               error: statusResponse.statusText,
-              response: responseText ? JSON.parse(responseText) : null
+              response: statusResponseText ? JSON.parse(statusResponseText) : null
             }),
-            needsSetup,
+            needsSetup: true,
             requestUrl: `${baseUrl}/instance/connectionState/${instanceName}`
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: statusResponse.status }
         )
       }
 
-      const statusData = JSON.parse(responseText)
+      const statusData = JSON.parse(statusResponseText)
       console.log('✅ Status verificado com sucesso:', statusData)
 
       // Update connection status in database
