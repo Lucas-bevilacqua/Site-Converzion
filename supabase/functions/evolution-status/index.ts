@@ -89,11 +89,14 @@ serve(async (req) => {
       const errorText = await statusResponse.text()
       console.error('❌ Erro na resposta do Evolution:', errorText)
       
+      // If instance doesn't exist, mark as needing setup
+      const needsSetup = statusResponse.status === 404
+      
       return new Response(
         JSON.stringify({ 
           error: 'Erro ao verificar status do Evolution',
           details: errorText,
-          needsSetup: statusResponse.status === 404
+          needsSetup
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: statusResponse.status }
       )
