@@ -62,7 +62,8 @@ serve(async (req) => {
 
     // Clean up the URL and instance name
     const baseUrl = empresa.url_instance.replace(/\/+$/, '')
-    const instanceName = encodeURIComponent(empresa.instance_name.trim())
+    // Format instance name: replace underscores with spaces and then URL encode
+    const instanceName = encodeURIComponent(empresa.instance_name.replace(/_/g, ' ').trim())
     
     console.log('🌐 Verificando status da instância:', instanceName)
     console.log('🔗 URL base:', baseUrl)
