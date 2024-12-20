@@ -61,12 +61,12 @@ serve(async (req) => {
     }
 
     // Clean up the URL and instance name
-    const baseUrl = empresa.url_instance.split('/message')[0].replace(/\/+$/, '')
-    // Ensure instance name is properly encoded and cleaned
+    const baseUrl = empresa.url_instance.replace(/\/+$/, '')
     const instanceName = encodeURIComponent(empresa.instance_name.trim())
     
     console.log('🌐 Verificando status da instância:', instanceName)
     console.log('🔗 URL base:', baseUrl)
+    console.log('🔑 API Key:', empresa.apikeyevo)
 
     try {
       const statusResponse = await fetch(`${baseUrl}/instance/connectionState/${instanceName}`, {
@@ -88,7 +88,8 @@ serve(async (req) => {
           JSON.stringify({ 
             error: 'Erro ao verificar status do Evolution',
             details: errorText,
-            needsSetup
+            needsSetup,
+            requestUrl: `${baseUrl}/instance/connectionState/${instanceName}`
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: statusResponse.status }
         )
@@ -101,7 +102,8 @@ serve(async (req) => {
         JSON.stringify({ 
           success: true, 
           isConnected: statusData.state === 'open',
-          state: statusData.state
+          state: statusData.state,
+          requestUrl: `${baseUrl}/instance/connectionState/${instanceName}`
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
@@ -109,7 +111,10 @@ serve(async (req) => {
     } catch (error) {
       console.error('❌ Erro ao verificar status:', error)
       return new Response(
-        JSON.stringify({ error: `Erro ao verificar status: ${error.message}` }),
+        JSON.stringify({ 
+          error: `Erro ao verificar status: ${error.message}`,
+          requestUrl: `${baseUrl}/instance/connectionState/${instanceName}`
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       )
     }
