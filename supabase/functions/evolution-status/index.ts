@@ -78,7 +78,7 @@ serve(async (req) => {
           'apikey': empresa.apikeyevo
         },
         body: JSON.stringify({
-          instanceName: instanceName,
+          instanceName: empresa.instance_name.trim(),
           webhook: null,
           events: false
         })
