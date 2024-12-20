@@ -62,7 +62,8 @@ serve(async (req) => {
 
     // Clean up the URL and instance name
     const baseUrl = empresa.url_instance.split('/message')[0].replace(/\/+$/, '')
-    const instanceName = encodeURIComponent(empresa.instance_name.trim())
+    // Format instance name: replace spaces with underscores
+    const instanceName = empresa.instance_name.trim().replace(/\s+/g, '_')
     
     console.log('🌐 Verificando status da instância:', instanceName)
     console.log('🔑 Usando API Key:', empresa.apikeyevo)
