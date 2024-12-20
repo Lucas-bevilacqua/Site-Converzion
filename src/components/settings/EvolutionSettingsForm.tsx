@@ -57,17 +57,21 @@ export const EvolutionSettingsForm = () => {
         return;
       }
 
+      // Ensure instance name is URL-safe by removing spaces and special characters
+      const safeInstanceName = evolutionInstance.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+
       const { error } = await supabase
         .from('Empresas')
         .update({
           url_instance: evolutionUrl,
           apikeyevo: evolutionApiKey,
-          instance_name: evolutionInstance,
+          instance_name: safeInstanceName,
           is_connected: false
         })
         .eq('emailempresa', session.user.email);
 
       if (error) {
+        console.error('Erro ao salvar configurações:', error);
         toast({
           title: "Erro",
           description: "Não foi possível salvar as configurações",
@@ -78,8 +82,11 @@ export const EvolutionSettingsForm = () => {
           title: "Sucesso",
           description: "Configurações do Evolution salvas com sucesso",
         });
+        // Update the displayed instance name with the safe version
+        setEvolutionInstance(safeInstanceName);
       }
     } catch (error) {
+      console.error('Erro ao salvar configurações:', error);
       toast({
         title: "Erro",
         description: "Erro ao salvar configurações",
@@ -129,11 +136,14 @@ export const EvolutionSettingsForm = () => {
           <Input
             id="evolutionInstance"
             type="text"
-            placeholder="Nome da sua instância"
+            placeholder="Nome da sua instância (sem espaços ou caracteres especiais)"
             value={evolutionInstance}
             onChange={(e) => setEvolutionInstance(e.target.value)}
             required
           />
+          <p className="text-sm text-gray-500 mt-1">
+            O nome da instância será automaticamente formatado para remover espaços e caracteres especiais.
+          </p>
         </div>
 
         <Button type="submit" disabled={loading} className="w-full">
