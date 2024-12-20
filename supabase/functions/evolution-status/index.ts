@@ -65,13 +65,29 @@ serve(async (req) => {
 
     // Clean up the URL and instance name
     const baseUrl = empresa.url_instance.split('/message')[0].replace(/\/+$/, '')
-    // Format instance name: replace spaces with underscores
     const instanceName = empresa.instance_name.trim().replace(/\s+/g, '_')
     
     console.log('🌐 Verificando status da instância:', instanceName)
     console.log('🔑 Usando API Key:', empresa.apikeyevo)
 
     try {
+      // First, try to create the instance if it doesn't exist
+      const createResponse = await fetch(`${baseUrl}/instance/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': empresa.apikeyevo
+        },
+        body: JSON.stringify({
+          instanceName: instanceName,
+          webhook: null,
+          events: false
+        })
+      })
+
+      console.log('📡 Create instance response:', createResponse.status)
+      
+      // Now check the connection state
       const statusResponse = await fetch(`${baseUrl}/instance/connectionState/${instanceName}`, {
         method: 'GET',
         headers: {
@@ -81,13 +97,12 @@ serve(async (req) => {
       })
 
       const responseText = await statusResponse.text()
-      console.log('📡 Response status:', statusResponse.status)
+      console.log('📡 Status response:', statusResponse.status)
       console.log('📡 Response text:', responseText)
 
       if (!statusResponse.ok) {
         let needsSetup = false
         
-        // Parse the response text to check for specific error messages
         try {
           const errorData = JSON.parse(responseText)
           if (errorData.response?.message?.[0]?.includes('instance does not exist')) {
