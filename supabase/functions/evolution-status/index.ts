@@ -62,10 +62,11 @@ serve(async (req) => {
 
     // Clean up the URL and instance name
     const baseUrl = empresa.url_instance.split('/message')[0].replace(/\/+$/, '')
-    // Garantir que o nome da instância seja codificado corretamente para URL
+    // Ensure instance name is properly encoded and cleaned
     const instanceName = encodeURIComponent(empresa.instance_name.trim())
     
     console.log('🌐 Verificando status da instância:', instanceName)
+    console.log('🔗 URL base:', baseUrl)
 
     try {
       const statusResponse = await fetch(`${baseUrl}/instance/connectionState/${instanceName}`, {
@@ -80,7 +81,7 @@ serve(async (req) => {
         const errorText = await statusResponse.text()
         console.error('❌ Erro na resposta do Evolution:', errorText)
         
-        // If instance doesn't exist, mark as needing setup
+        // If instance doesn't exist or other 404 error, mark as needing setup
         const needsSetup = statusResponse.status === 404
         
         return new Response(
