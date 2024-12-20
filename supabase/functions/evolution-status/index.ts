@@ -55,7 +55,7 @@ serve(async (req) => {
     if (!empresa.url_instance || !empresa.apikeyevo || !empresa.instance_name) {
       console.error('❌ Credenciais da Evolution incompletas')
       return new Response(
-        JSON.stringify({ error: 'Credenciais do Evolution não configuradas' }),
+        JSON.stringify({ error: 'Credenciais do Evolution não configuradas', needsSetup: true }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
     }
