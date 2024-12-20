@@ -55,67 +55,69 @@ serve(async (req) => {
     if (!empresa.url_instance || !empresa.apikeyevo || !empresa.instance_name) {
       console.error('❌ Credenciais da Evolution incompletas')
       return new Response(
-        JSON.stringify({ error: 'Credenciais do Evolution não configuradas', needsSetup: true }),
+        JSON.stringify({ error: 'Credenciais do Evolution não configuradas' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
     }
 
     // Clean up the URL and instance name
-    const baseUrl = empresa.url_instance.replace(/\/+$/, '')
-    // Format instance name: replace underscores with spaces and then URL encode
-    const instanceName = encodeURIComponent(empresa.instance_name.replace(/_/g, ' ').trim())
+    const baseUrl = empresa.url_instance.split('/message')[0].replace(/\/+$/, '')
+    const instanceName = encodeURIComponent(empresa.instance_name.trim())
     
     console.log('🌐 Verificando status da instância:', instanceName)
-    console.log('🔗 URL base:', baseUrl)
-    console.log('🔑 API Key:', empresa.apikeyevo)
+    console.log('🔑 Usando API Key:', empresa.apikeyevo)
 
     try {
       const statusResponse = await fetch(`${baseUrl}/instance/connectionState/${instanceName}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'apikey': empresa.apikeyevo // Using the API key from the database
+          'apikey': empresa.apikeyevo
         }
       })
 
       if (!statusResponse.ok) {
         const errorText = await statusResponse.text()
-        console.error('❌ Erro na resposta do Evolution:', errorText)
+        console.error('❌ Erro ao verificar status:', errorText)
         
-        // If instance doesn't exist or other 404 error, mark as needing setup
-        const needsSetup = statusResponse.status === 404
-        
-        return new Response(
-          JSON.stringify({ 
-            error: 'Erro ao verificar status do Evolution',
-            details: errorText,
-            needsSetup,
-            requestUrl: `${baseUrl}/instance/connectionState/${instanceName}`
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: statusResponse.status }
-        )
+        // Check if instance doesn't exist
+        if (statusResponse.status === 404) {
+          return new Response(
+            JSON.stringify({
+              error: 'Erro ao verificar status do Evolution',
+              details: errorText,
+              needsSetup: true,
+              requestUrl: `${baseUrl}/instance/connectionState/${instanceName}`
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+          )
+        }
+
+        throw new Error(`Evolution API returned ${statusResponse.status}: ${errorText}`)
       }
 
       const statusData = await statusResponse.json()
-      console.log('✅ Status do Evolution:', statusData)
+      console.log('✅ Status verificado com sucesso:', statusData)
+
+      // Update connection status in database
+      const { error: updateError } = await supabaseClient
+        .from('Empresas')
+        .update({ is_connected: statusData.state === 'open' })
+        .eq('emailempresa', email)
+
+      if (updateError) {
+        console.error('❌ Erro ao atualizar status de conexão:', updateError)
+      }
 
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          isConnected: statusData.state === 'open',
-          state: statusData.state,
-          requestUrl: `${baseUrl}/instance/connectionState/${instanceName}`
-        }),
+        JSON.stringify(statusData),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
 
     } catch (error) {
       console.error('❌ Erro ao verificar status:', error)
       return new Response(
-        JSON.stringify({ 
-          error: `Erro ao verificar status: ${error.message}`,
-          requestUrl: `${baseUrl}/instance/connectionState/${instanceName}`
-        }),
+        JSON.stringify({ error: `Erro ao verificar status: ${error.message}` }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       )
     }
