@@ -40,7 +40,7 @@ serve(async (req) => {
     console.log('🔍 Buscando dados da empresa:', email)
     const { data: empresa, error: empresaError } = await supabaseClient
       .from('Empresas')
-      .select('url_instance, instance_name, apikeyevo, is_connected')
+      .select('url_instance, instance_name, apikeyevo')
       .eq('emailempresa', email)
       .single()
 
@@ -55,17 +55,15 @@ serve(async (req) => {
     if (!empresa.url_instance || !empresa.apikeyevo || !empresa.instance_name) {
       console.error('❌ Credenciais da Evolution incompletas')
       return new Response(
-        JSON.stringify({ 
-          error: 'Credenciais do Evolution não configuradas',
-          needsSetup: true 
-        }),
+        JSON.stringify({ error: 'Credenciais do Evolution não configuradas' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
     }
 
     // Clean up the URL and instance name
     const baseUrl = empresa.url_instance.trim().replace(/\/+$/, '')
-    const instanceName = empresa.instance_name.trim().replace(/[^a-zA-Z0-9_]/g, '_')
+    // Use encodeURIComponent for proper URL encoding of spaces and special characters
+    const instanceName = encodeURIComponent(empresa.instance_name.trim())
     
     console.log('🌐 Base URL:', baseUrl)
     console.log('🔑 Instance Name:', instanceName)
